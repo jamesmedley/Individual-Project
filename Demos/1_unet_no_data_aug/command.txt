@@ -1,0 +1,1 @@
+ python predict.py --model checkpoint_epoch33.pth --input ./data/imgs/cju30k2z40ds308353kdew70n.jpg ./data/imgs/cju8d2q30tfhs0801n7lx77xl.jpg ./data/imgs/cju8c5mxls96t0850wvkvsity.jpg ./data/imgs/cju8b0jr0r2oi0801jiquetd5.jpg ./data/imgs/cju7ddtz729960801uazp1knc.jpg --output model1/1.png model1/2.png model1/3.png model1/4.png model1/5.png --viz --classes 1

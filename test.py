@@ -4,6 +4,7 @@ import os
 import torch
 from evaluate import evaluate
 from unet import UNet
+from unet import ScatUNet
 from pathlib import Path
 from utils.data_loading import BasicDataset
 from torch.utils.data import DataLoader
@@ -23,7 +24,11 @@ def test_model(
     loader_args = dict(batch_size=1, num_workers=os.cpu_count(), pin_memory=True)
     test_loader = DataLoader(test_set, shuffle=False, drop_last=True, **loader_args)
     test_score = evaluate(model, test_loader, device, amp)
-    logging.info('Mean Dice score: {}'.format(test_score))
+    logging.info('Mean Dice score: {}'.format(test_score["dice_score"]))
+    logging.info('mIoU: {}'.format(test_score["mIoU"]))
+    logging.info('Precision: {}'.format(test_score["precision"]))
+    logging.info('Recall: {}'.format(test_score["recall"]))
+
     return test_score
 
 def get_args():
@@ -47,7 +52,8 @@ if __name__ == '__main__':
     # Change here to adapt to your data
     # n_channels=3 for RGB images
     # n_classes is the number of probabilities you want to get per pixel
-    model = UNet(n_channels=3, n_classes=args.classes, bilinear=args.bilinear)
+    #model = UNet(n_channels=3, n_classes=args.classes, bilinear=args.bilinear)
+    model = ScatUNet(n_channels=3, n_classes=1, bilinear=args.bilinear, J=1, L=16, input_shape=(128, 128))
     model = model.to(memory_format=torch.channels_last)
 
     logging.info(f'Network:\n'

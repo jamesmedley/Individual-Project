@@ -33,7 +33,7 @@ class UNet(nn.Module):
         scattering_coeffs = self.S.scattering(x.contiguous())  # Shape: (B, C, scattering_channels, H', W')
         B, C, scattering_channels, H, W = scattering_coeffs.shape
         scattering_coeffs = scattering_coeffs.view(B, -1, H, W)  # Shape: (B, C * scattering_channels, H', W')
-        scattering_coeffs_upsampled = F.interpolate(scattering_coeffs, scale_factor=2, mode='bilinear', align_corners=False)
+        scattering_coeffs_upsampled = F.interpolate(scattering_coeffs, size=self.input_shape, mode='bilinear', align_corners=False)
         input_tensor = torch.cat([input_tensor, scattering_coeffs_upsampled], dim=1)
         x1 = self.inc(input_tensor)
         x2 = self.down1(x1)

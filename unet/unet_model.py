@@ -4,7 +4,7 @@ from .unet_parts import *
 
 
 class UNet(nn.Module):
-    def __init__(self, n_channels, n_classes, bilinear=False, J=1, L=16, input_shape=(128, 128)):
+    def __init__(self, n_channels, n_classes, bilinear=False, J=2, L=8, input_shape=(128, 128)):
         super(UNet, self).__init__()
         self.n_channels = n_channels
         self.n_classes = n_classes
@@ -34,7 +34,7 @@ class UNet(nn.Module):
         scattering_coeffs = self.S.scattering(x.contiguous())  # Shape: (B, C, scattering_channels, H', W')
         B, C, scattering_channels, H, W = scattering_coeffs.shape
         scattering_coeffs = scattering_coeffs.view(B, -1, H, W)  # Shape: (B, C * scattering_channels, H', W')
-        scattering_coeffs_upsampled = F.interpolate(scattering_coeffs, scale_factor=2, mode='bilinear', align_corners=False)
+        scattering_coeffs_upsampled = F.interpolate(scattering_coeffs, size=self.input_shape, mode='bilinear', align_corners=False)
 
         x1 = self.inc(scattering_coeffs_upsampled)
         x2 = self.down1(x1)

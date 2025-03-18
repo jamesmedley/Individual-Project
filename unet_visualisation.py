@@ -13,7 +13,7 @@ from unet import UNet
 
 # Load and prepare the model
 def load_model(model_path):
-    model = UNet(n_channels=3, n_classes=1, bilinear=False, J=1, L=16, input_shape=(128, 128))
+    model = UNet(n_channels=3, n_classes=1, bilinear=False, J=2, L=8, input_shape=(128, 128))
     state_dict = torch.load(model_path, map_location=torch.device('cpu'))
     if isinstance(state_dict, dict):  # If it's a state_dict, load it
         model.load_state_dict(state_dict, strict=False)
@@ -243,7 +243,7 @@ def save_scattering_coefficients(input_tensor, J=1, L=16, input_shape=(128, 128)
 
 
 def main():
-    model_path = './final_models/12/checkpoint_epoch50.pth'  # Path to your trained model
+    model_path = './final_models/16/checkpoint.pth'  # Path to your trained model
     image_path = 'data/test/imgs/cju1dfeupuzlw0835gnxip369.jpg'  # Path to a sample image
 
     # Load model and register hooks

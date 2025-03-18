@@ -1,16 +1,21 @@
 """ Full assembly of the parts to form the complete network """
-
+from kymatio.torch import Scattering2D
 from .unet_parts import *
 
 
 class UNet(nn.Module):
-    def __init__(self, n_channels, n_classes, bilinear=False):
+    def __init__(self, n_channels, n_classes, bilinear=False, J=1, L=16, input_shape=(128, 128)):
         super(UNet, self).__init__()
         self.n_channels = n_channels
         self.n_classes = n_classes
         self.bilinear = bilinear
+        self.input_shape = input_shape
 
-        self.inc = (DoubleConv(n_channels, 64))
+        self.S = Scattering2D(J=J, shape=input_shape, L=L)
+        scattering_channels = 1 + L * J + (L ** 2 * J * (J - 1)) // 2
+        n_input_channels = n_channels + n_channels * scattering_channels
+
+        self.inc = (DoubleConv(n_input_channels, 64))
         self.down1 = (Down(64, 128))
         self.down2 = (Down(128, 256))
         self.down3 = (Down(256, 512))
@@ -23,7 +28,14 @@ class UNet(nn.Module):
         self.outc = (OutConv(64, n_classes))
 
     def forward(self, x):
-        x1 = self.inc(x)
+        input_tensor = x.detach().clone()
+        # Compute scattering transform
+        scattering_coeffs = self.S.scattering(x.contiguous())  # Shape: (B, C, scattering_channels, H', W')
+        B, C, scattering_channels, H, W = scattering_coeffs.shape
+        scattering_coeffs = scattering_coeffs.view(B, -1, H, W)  # Shape: (B, C * scattering_channels, H', W')
+        scattering_coeffs_upsampled = F.interpolate(scattering_coeffs, scale_factor=2, mode='bilinear', align_corners=False)
+        input_tensor = torch.cat([input_tensor, scattering_coeffs_upsampled], dim=1)
+        x1 = self.inc(input_tensor)
         x2 = self.down1(x1)
         x3 = self.down2(x2)
         x4 = self.down3(x3)

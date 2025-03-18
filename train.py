@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 import wandb
 from evaluate import evaluate
-from unet import UNet, ScatUNet, JNet
+from unet import UNet, ScatUNet
 from utils.data_loading import BasicDataset
 from utils.dice_score import dice_loss
 

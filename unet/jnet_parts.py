@@ -5,21 +5,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class SingleConv(nn.Module):
-    """(convolution => [BN] => ReLU)"""
-
-    def __init__(self, in_channels, out_channels):
-        super().__init__()
-        self.single_conv = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, bias=False),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True)
-        )
-
-    def forward(self, x):
-        return self.single_conv(x)
-
-
 class DoubleConv(nn.Module):
     """(convolution => [BN] => ReLU) * 2"""
 
@@ -45,13 +30,13 @@ class Down(nn.Module):
 
     def __init__(self, in_channels, out_channels):
         super().__init__()
-        self.maxpool_conv = nn.Sequential(
-            nn.MaxPool2d(2),
-            DoubleConv(in_channels, out_channels)
-        )
+        self.maxpool = nn.MaxPool2d(2)
+        self.conv = DoubleConv(in_channels, out_channels)
 
-    def forward(self, x):
-        return self.maxpool_conv(x)
+    def forward(self, x, scat_coeffs):
+        x = self.maxpool(x)
+        x = torch.cat([scat_coeffs, x], dim=1)
+        return self.conv(x)
 
 
 class Up(nn.Module):

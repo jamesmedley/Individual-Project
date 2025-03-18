@@ -246,8 +246,8 @@ def save_scattering_coefficients(input_tensor, J=1, L=16, input_shape=(128, 128)
 
 
 def main():
-    #model_path = './Demos/3_unet_50-60/checkpoint_epoch10.pth'  # Path to your trained model
-    model_path = './Demos/9_unet_scat_(single)_50-60/checkpoint_epoch10.pth'  # Path to your trained model
+    #model_path = './final_models/3/checkpoint_epoch10.pth'  # Path to your trained model
+    model_path = 'checkpoints/checkpoint.pth'  # Path to your trained model
     image_path = 'data/test/imgs/cju1dfeupuzlw0835gnxip369.jpg'  # Path to a sample image
 
     # Load model and register hooks

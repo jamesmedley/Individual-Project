@@ -5,6 +5,7 @@ import torch
 from evaluate import evaluate
 from unet import UNet
 from unet import ScatUNet
+from unet import JNet
 from pathlib import Path
 from utils.data_loading import BasicDataset
 from torch.utils.data import DataLoader
@@ -20,10 +21,12 @@ def test_model(
     img_scale: float = 0.5,
     amp: bool = False
 ):
+    pytorch_total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     test_set = BasicDataset(test_img_dir, test_mask_dir, img_scale)
     loader_args = dict(batch_size=1, num_workers=os.cpu_count(), pin_memory=True)
     test_loader = DataLoader(test_set, shuffle=False, drop_last=True, **loader_args)
     test_score = evaluate(model, test_loader, device, amp)
+    logging.info('Learnable parameters: {}'.format(pytorch_total_params))
     logging.info('Mean Dice score: {}'.format(test_score["dice_score"]))
     logging.info('mIoU: {}'.format(test_score["mIoU"]))
     logging.info('Precision: {}'.format(test_score["precision"]))
@@ -54,6 +57,7 @@ if __name__ == '__main__':
     # n_classes is the number of probabilities you want to get per pixel
     #model = UNet(n_channels=3, n_classes=args.classes, bilinear=args.bilinear)
     model = ScatUNet(n_channels=3, n_classes=1, bilinear=args.bilinear, J=1, L=16, input_shape=(128, 128))
+    #model = JNet(n_channels=3, n_classes=1, L=8, input_shape=(128, 128))
     model = model.to(memory_format=torch.channels_last)
 
     logging.info(f'Network:\n'
@@ -63,7 +67,9 @@ if __name__ == '__main__':
 
     if args.load:
         state_dict = torch.load(args.load, map_location=device)
+
         del state_dict['mask_values']
+
         model.load_state_dict(state_dict)
         logging.info(f'Model loaded from {args.load}')
 

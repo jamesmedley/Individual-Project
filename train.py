@@ -1,13 +1,10 @@
 import argparse
 import logging
 import os
-import random
-import sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as T
-import torchvision.transforms.functional as TF
 from utils.data_augment import JointTransform
 from pathlib import Path
 from torch import optim
@@ -16,8 +13,7 @@ from tqdm import tqdm
 
 import wandb
 from evaluate import evaluate
-from unet import UNet
-from unet import ScatUNet
+from unet import UNet, ScatUNet, JNet
 from utils.data_loading import BasicDataset
 from utils.dice_score import dice_loss
 
@@ -153,15 +149,9 @@ def train_model(
 
                         logging.info('Validation Dice score: {}'.format(val_score))
                         try:
-                            pred_mask = (F.sigmoid(masks_pred.squeeze(1)) > 0.5).float()
                             experiment.log({
                                 'learning rate': optimizer.param_groups[0]['lr'],
                                 'validation Dice': val_score,
-                                'images': wandb.Image(images[0].cpu()),
-                                'masks': {
-                                    'true': wandb.Image(true_masks[0].float().cpu()),
-                                    'pred': wandb.Image(pred_mask[0].float().cpu()),
-                                },
                                 'step': global_step,
                                 'epoch': epoch,
                                 **histograms
@@ -169,12 +159,12 @@ def train_model(
                         except:
                             pass
 
-        if save_checkpoint:
-            Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
-            state_dict = model.state_dict()
-            state_dict['mask_values'] = train_set.mask_values
-            torch.save(state_dict, str(dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch)))
-            logging.info(f'Checkpoint {epoch} saved!')
+    if save_checkpoint:
+        Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
+        state_dict = model.state_dict()
+        state_dict['mask_values'] = train_set.mask_values
+        torch.save(state_dict, str(dir_checkpoint / 'checkpoint.pth'))
+        logging.info(f'Final checkpoint saved!')
 
 
 def get_args():
@@ -206,6 +196,7 @@ if __name__ == '__main__':
     # n_classes is the number of probabilities you want to get per pixel
     #model = UNet(n_channels=3, n_classes=args.classes, bilinear=args.bilinear)
     model = ScatUNet(n_channels=3, n_classes=1, bilinear=args.bilinear, J=1, L=16, input_shape=(128, 128))
+    #model = JNet(n_channels=3, n_classes=1, L=16, J=1, input_shape=(128, 128))
     model = model.to(memory_format=torch.channels_last)
 
     logging.info(f'Network:\n'

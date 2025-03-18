@@ -13,7 +13,7 @@ class UNet(nn.Module):
 
         self.S = Scattering2D(J=J, shape=input_shape, L=L)
         scattering_channels = 1 + L * J + (L ** 2 * J * (J - 1)) // 2
-        n_input_channels = n_channels + n_channels * scattering_channels
+        n_input_channels = n_channels * scattering_channels
 
         self.inc = (DoubleConv(n_input_channels, 64))
         self.down1 = (Down(64, 128))
@@ -28,14 +28,13 @@ class UNet(nn.Module):
         self.outc = (OutConv(64, n_classes))
 
     def forward(self, x):
-        input_tensor = x.detach().clone()
         # Compute scattering transform
         scattering_coeffs = self.S.scattering(x.contiguous())  # Shape: (B, C, scattering_channels, H', W')
         B, C, scattering_channels, H, W = scattering_coeffs.shape
         scattering_coeffs = scattering_coeffs.view(B, -1, H, W)  # Shape: (B, C * scattering_channels, H', W')
         scattering_coeffs_upsampled = F.interpolate(scattering_coeffs, scale_factor=2, mode='bilinear', align_corners=False)
-        input_tensor = torch.cat([input_tensor, scattering_coeffs_upsampled], dim=1)
-        x1 = self.inc(input_tensor)
+
+        x1 = self.inc(scattering_coeffs_upsampled)
         x2 = self.down1(x1)
         x3 = self.down2(x2)
         x4 = self.down3(x3)

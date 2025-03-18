@@ -24,7 +24,8 @@ class UNet(nn.Module):
         self.up1 = (Up(1024, 512 // factor, bilinear))
         self.up2 = (Up(512, 256 // factor, bilinear))
         self.up3 = (Up(256, 128 // factor, bilinear))
-        self.up4 = (Up(128, 64, bilinear, n_final_skip=67))
+        # skip input and scattering channels to final double conv
+        self.up4 = (Up(128, 64, bilinear, n_final_skip=64 + 3 + n_input_channels))
         self.outc = (OutConv(64, n_classes))
 
     def forward(self, x):
@@ -44,7 +45,7 @@ class UNet(nn.Module):
         x = self.up1(x5, x4)
         x = self.up2(x, x3)
         x = self.up3(x, x2)
-        skip = torch.cat([x1, input_tensor], dim=1)
+        skip = torch.cat([x1, input_tensor, scattering_coeffs_upsampled], dim=1)
         x = self.up4(x, skip)
         logits = self.outc(x)
         return logits

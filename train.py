@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 import wandb
 from evaluate import evaluate
-from unet import UNet, ScatUNet, JNet
+from unet import UNet
 from utils.data_loading import BasicDataset
 from utils.dice_score import dice_loss
 
@@ -194,9 +194,7 @@ if __name__ == '__main__':
     # Change here to adapt to your data
     # n_channels=3 for RGB images
     # n_classes is the number of probabilities you want to get per pixel
-    #model = UNet(n_channels=3, n_classes=args.classes, bilinear=args.bilinear)
-    model = ScatUNet(n_channels=3, n_classes=1, bilinear=args.bilinear, J=1, L=16, input_shape=(128, 128))
-    #model = JNet(n_channels=3, n_classes=1, L=16, J=1, input_shape=(128, 128))
+    model = UNet(n_channels=3, n_classes=args.classes, bilinear=args.bilinear, J=1, L=8, input_shape=(128, 128))
     model = model.to(memory_format=torch.channels_last)
 
     logging.info(f'Network:\n'

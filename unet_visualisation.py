@@ -8,14 +8,12 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from matplotlib import cm
 import numpy as np
-from unet import ScatUNet
 from unet import UNet
 
 
 # Load and prepare the model
 def load_model(model_path):
-    #model = UNet(n_channels=3, n_classes=1, bilinear=False)
-    model = ScatUNet(n_channels=3, n_classes=1, bilinear=False, J=1, L=16, input_shape=(128, 128))
+    model = UNet(n_channels=3, n_classes=1, bilinear=False, J=1, L=8, input_shape=(128, 128))
 
     state_dict = torch.load(model_path, map_location=torch.device('cpu'))
     if isinstance(state_dict, dict):  # If it's a state_dict, load it
@@ -246,8 +244,7 @@ def save_scattering_coefficients(input_tensor, J=1, L=16, input_shape=(128, 128)
 
 
 def main():
-    #model_path = './final_models/3/checkpoint_epoch10.pth'  # Path to your trained model
-    model_path = 'checkpoints/checkpoint.pth'  # Path to your trained model
+    model_path = './final_models/18/checkpoint.pth'  # Path to your trained model
     image_path = 'data/test/imgs/cju1dfeupuzlw0835gnxip369.jpg'  # Path to a sample image
 
     # Load model and register hooks

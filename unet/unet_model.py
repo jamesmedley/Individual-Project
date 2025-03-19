@@ -44,7 +44,7 @@ class UNet(nn.Module):
         x = self.up1(x5, x4)
         x = self.up2(x, x3)
         x = self.up3(x, x2)
-        skip = torch.cat([x1, input_tensor], dim=1)
+        skip = torch.cat([input_tensor, x1], dim=1)
         x = self.up4(x, skip)
         logits = self.outc(x)
         return logits

@@ -4,8 +4,6 @@ import os
 import torch
 from evaluate import evaluate
 from unet import UNet
-from unet import ScatUNet
-from unet import JNet
 from pathlib import Path
 from utils.data_loading import BasicDataset
 from torch.utils.data import DataLoader

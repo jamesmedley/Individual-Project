@@ -144,6 +144,8 @@ def train_model(
                                     histograms['Weights/' + tag] = wandb.Histogram(value.data.cpu())
                                 if not (torch.isinf(value.grad) | torch.isnan(value.grad)).any():
                                     histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
+                            else:
+                                print(tag, value.grad)
 
                         val_score = evaluate(model, val_loader, device, amp)["dice_score"]
                         scheduler.step(val_score)

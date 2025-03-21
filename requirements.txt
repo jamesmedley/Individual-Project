@@ -1,11 +1,11 @@
+kymatio==0.3.0
 matplotlib==3.6.2
 numpy==1.23.5
+opencv_python_headless==4.11.0.86
 Pillow==9.3.0
+Pillow==11.1.0
+pytorch_wavelets==1.3.0
+torch==2.5.1
+torchvision==0.20.1
 tqdm==4.64.1
 wandb==0.13.5
-PyWavelets==1.6.0
-dtcwt==0.14.0
-
-torch~=2.5.1
-kymatio~=0.3.0
-torchvision~=0.20.1

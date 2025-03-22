@@ -32,7 +32,7 @@ def display_dtcwt_enhanced(image_path):
     phase_vis = (phase + np.pi) / (2 * np.pi) * 255  # Scale phase to [0,255]
 
     # Display results
-    fig, axes = plt.subplots(3, 7, figsize=(15, 10))
+    fig, axes = plt.subplots(4, 7, figsize=(15, 10))
     axes[0, 0].imshow(img, cmap='gray')
     axes[0, 0].set_title("Original Image")
 
@@ -49,6 +49,8 @@ def display_dtcwt_enhanced(image_path):
 
     axes[2, 0].imshow(phase_vis.mean(axis=0), cmap='twilight')
     axes[2, 0].set_title("Phase (Averaged)")
+    axes[3, 0].imshow(Yl[0][0], cmap='gray')
+    axes[3, 0].set_title("Yl")
 
     for ax in axes.flatten():
         ax.axis("off")

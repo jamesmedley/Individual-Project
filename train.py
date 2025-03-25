@@ -4,17 +4,10 @@ import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torchvision.transforms as T
-from utils.data_augment import JointTransform
 from pathlib import Path
 from torch import optim
-from torch.utils.data import DataLoader
 from tqdm import tqdm
-
-import wandb
-from evaluate import evaluate
-from unet import UNet, ScatUNet, JNet
-from utils.data_loading import BasicDataset
+from unet import UNet
 from utils.dice_score import dice_loss
 
 # Directories for pre-split datasets
@@ -29,6 +22,9 @@ dir_checkpoint = Path('./checkpoints/')
 def train_model(
         model,
         device,
+        train_loader,
+        n_train,
+        train_set,
         epochs: int = 5,
         batch_size: int = 1,
         learning_rate: float = 1e-5,
@@ -38,40 +34,14 @@ def train_model(
         amp: bool = False,
         weight_decay: float = 1e-8,
         momentum: float = 0.999,
-        gradient_clipping: float = 1.0,
+        gradient_clipping: float = 1.0
 ):
-    image_transforms = [
-        T.RandomHorizontalFlip(p=0.5),
-        T.RandomVerticalFlip(p=0.5),
-        T.RandomRotation(degrees=(-45, 45)),
-        T.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
-    ]
-
-    transform = JointTransform(image_transforms=image_transforms)
-
-    train_set = BasicDataset(train_img_dir, train_mask_dir, img_scale, transform=transform)
-    val_set = BasicDataset(val_img_dir, val_mask_dir, img_scale)
-    n_train = len(train_set)
-    n_val = len(val_set)
-
-    # 3. Create data loaders
-    loader_args = dict(batch_size=batch_size, num_workers=os.cpu_count(), pin_memory=True)
-    train_loader = DataLoader(train_set, shuffle=True, **loader_args)
-    val_loader = DataLoader(val_set, shuffle=False, drop_last=True, **loader_args)
-
-    # (Initialize logging)
-    experiment = wandb.init(project='UNet')
-    experiment.config.update(
-        dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
-             val_percent=val_percent, save_checkpoint=save_checkpoint, img_scale=img_scale, amp=amp)
-    )
 
     logging.info(f'''Starting training:
         Epochs:          {epochs}
         Batch size:      {batch_size}
         Learning rate:   {learning_rate}
         Training size:   {n_train}
-        Validation size: {n_val}
         Checkpoints:     {save_checkpoint}
         Device:          {device.type}
         Images scaling:  {img_scale}
@@ -80,9 +50,9 @@ def train_model(
 
     # 4. Set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
     optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
-
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)  # goal: maximize Dice score
-    grad_scaler = torch.amp.GradScaler('cpu', enabled=amp)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)
+    use_amp = torch.cuda.is_available()
+    grad_scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
     criterion = nn.CrossEntropyLoss() if model.n_classes > 1 else nn.BCEWithLogitsLoss()
     global_step = 0
 
@@ -125,39 +95,9 @@ def train_model(
                 pbar.update(images.shape[0])
                 global_step += 1
                 epoch_loss += loss.item()
-                experiment.log({
-                    'train loss': loss.item(),
-                    'step': global_step,
-                    'epoch': epoch
-                })
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
 
-                # Evaluation round
-                division_step = (n_train // (5 * batch_size))
-                if division_step > 0:
-                    if global_step % division_step == 0:
-                        histograms = {}
-                        for tag, value in model.named_parameters():
-                            tag = tag.replace('/', '.')
-                            if not (torch.isinf(value) | torch.isnan(value)).any():
-                                histograms['Weights/' + tag] = wandb.Histogram(value.data.cpu())
-                            if not (torch.isinf(value.grad) | torch.isnan(value.grad)).any():
-                                histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
-
-                        val_score = evaluate(model, val_loader, device, amp)["dice_score"]
-                        scheduler.step(val_score)
-
-                        logging.info('Validation Dice score: {}'.format(val_score))
-                        try:
-                            experiment.log({
-                                'learning rate': optimizer.param_groups[0]['lr'],
-                                'validation Dice': val_score,
-                                'step': global_step,
-                                'epoch': epoch,
-                                **histograms
-                            })
-                        except:
-                            pass
+        scheduler.step()
 
     if save_checkpoint:
         Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)

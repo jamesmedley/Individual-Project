@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 import wandb
 from evaluate import evaluate
-from unet import UNet, ScatUNet, JNet
+from unet import UNet
 from utils.data_loading import BasicDataset
 from utils.dice_score import dice_loss
 
@@ -82,7 +82,8 @@ def train_model(
     optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)  # goal: maximize Dice score
-    grad_scaler = torch.amp.GradScaler('cpu', enabled=amp)
+    use_amp = torch.cuda.is_available()
+    grad_scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
     criterion = nn.CrossEntropyLoss() if model.n_classes > 1 else nn.BCEWithLogitsLoss()
     global_step = 0
 

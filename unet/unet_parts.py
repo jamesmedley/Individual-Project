@@ -3,6 +3,17 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from kymatio.torch import Scattering2D
+
+
+class ScatteringModule(nn.Module):
+    def __init__(self, J, shape, L):
+        super(ScatteringModule, self).__init__()
+        self.S = Scattering2D(J=J, shape=shape, L=L)
+        self.S.requires_grad = True
+
+    def forward(self, x):
+        return self.S.scattering(x)
 
 
 class DoubleConv(nn.Module):

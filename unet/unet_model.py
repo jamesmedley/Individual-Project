@@ -14,7 +14,7 @@ class UNet(nn.Module):
         J = 1
         L = 16
 
-        self.S = Scattering2D(J=J, shape=self.input_shape, L=L, backend='torch_skcuda')
+        self.scattering = ScatteringModule(J=J, shape=self.input_shape, L=L)
         n_scattering_channels = 1 + L * J + (L ** 2 * J * (J - 1)) // 2
         n_input_channels = n_channels * n_scattering_channels
 
@@ -33,7 +33,8 @@ class UNet(nn.Module):
         self.skip_upconv = (SkipUpConv(n_input_channels, 64))
 
     def forward(self, x):
-        scattering_coeffs = self.S.scattering(x.contiguous())  # Shape: (B, C, scattering_channels, H', W')
+        x = x.contiguous()
+        scattering_coeffs = self.scattering(x)
         B, C, scattering_channels, H, W = scattering_coeffs.shape
         scattering_coeffs = scattering_coeffs.view(B, -1, H, W)  # Shape: (B, C * scattering_channels, H', W')
 

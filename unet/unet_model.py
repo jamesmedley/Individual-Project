@@ -14,10 +14,10 @@ class UNet(nn.Module):
         self.J = 2
         self.L = 8
 
-        self.S = Scattering2D(J=self.J, shape=self.input_shape, L=self.L, backend='torch_skcuda')
+        self.S = Scattering2D(J=self.J, shape=self.input_shape, L=self.L)
         n_order1 = n_channels * (1 + self.J * self.L)
         n_order2 = n_channels * ((self.L ** 2 * self.J * (self.J - 1)) // 2)
-        n_input_channels =  n_order1 + n_order2
+        n_input_channels = n_order1 + n_order2
 
         self.inc = (DoubleConv(n_input_channels, 256))  # replace with scattering
         # removed down1
@@ -36,8 +36,8 @@ class UNet(nn.Module):
 
     def forward(self, x):
         scattering_coeffs = self.S.scattering(x.contiguous())  # Shape: (B, C, scattering_channels, H', W')
-        B, C, all_coeffs, H, W = scattering_coeffs.shape
-        all_coeffs = all_coeffs.view(B, -1, H, W)  # Shape: (B, C * scattering_channels, H', W')
+        B, C, scat_channels, H, W = scattering_coeffs.shape
+        all_coeffs = scattering_coeffs.view(B, -1, H, W)  # Shape: (B, C * scattering_channels, H', W')
 
         # Compute index boundaries for orders
         n_order0 = 1

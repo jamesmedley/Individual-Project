@@ -1,13 +1,10 @@
 import torch
-import os
-import pickle
 from torch.utils.data import DataLoader
 import torchvision.transforms as T
 from utils.data_augment import JointTransform
-import matplotlib.pyplot as plt
 from skopt import gp_minimize
+from skopt import dump
 from skopt.space import Real
-from skopt.plots import plot_convergence, plot_objective, plot_evaluations
 from unet import UNet
 from utils.data_loading import BasicDataset
 from evaluate import evaluate
@@ -16,7 +13,7 @@ from train import train_model  # Assuming the train_model function is imported f
 # Define search space
 space = [
     Real(1e-5, 1e-2, "log-uniform"),  # learning_rate
-    Real(1e-10, 1e-2, "log-uniform"),  # weight_decay
+    Real(1e-8, 1e-2, "log-uniform"),  # weight_decay
     Real(0.5, 2.0)  # gradient_clipping
 ]
 
@@ -76,44 +73,5 @@ def objective(params):
 
 if __name__ == '__main__':
     # Run the Bayesian Optimisation
-    result = gp_minimize(objective, space, n_calls=150, random_state=42)
-
-    with open('gp_minimize_result.pkl', 'wb') as f:  # save results for graphing later
-        pickle.dump(result, f)
-
-    # Best hyperparameters
-    best_hyperparameters = {
-        "Learning Rate": result.x[0],
-        "Weight Decay": result.x[1],
-        "Gradient Clipping": result.x[2]
-    }
-
-    # Print the best hyperparameters
-    print("Best Hyperparameters:")
-    for param, value in best_hyperparameters.items():
-        print(f"{param}: {value}")
-
-    # Save the best hyperparameters to a text file
-    with open('best_hyperparameters.txt', 'w') as f:
-        f.write("Best Hyperparameters:\n")
-        for param, value in best_hyperparameters.items():
-            f.write(f"{param}: {value}\n")
-
-    plt.figure(figsize=(12, 8))
-    plot_convergence(result)
-    plt.savefig('convergence_plot.png', dpi=300)  # Save the plot as a PNG image
-    plt.close()
-
-    param_names = ["Learning Rate", "Weight Decay", "Gradient Clipping"]
-
-    # Save objective function plot as an image
-    plt.figure(figsize=(25, 25))
-    plot_objective(result, dimensions=param_names, n_points=200, levels=30, size=5)
-    plt.savefig('objective_plot.png', dpi=300)
-    plt.close()
-
-    # Save evaluations plot as an image
-    plt.figure(figsize=(25, 25))
-    plot_evaluations(result, dimensions=param_names, size=5)
-    plt.savefig('evaluations_plot.png', dpi=300)
-    plt.close()
+    result = gp_minimize(objective, space, n_calls=10, random_state=42)
+    dump(result, "hp_optim_results.pkl", store_objective=False)

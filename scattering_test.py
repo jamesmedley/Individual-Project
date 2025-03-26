@@ -36,6 +36,7 @@ def plot_coefficients(coeffs, title):
     plt.tight_layout()
     plt.show()
 
+
 def extract_scattering_coeffs(x, J=2, L=8):
     """
     Computes scattering coefficients and organises them by spatial resolution.
@@ -87,7 +88,7 @@ def extract_scattering_coeffs(x, J=2, L=8):
 # Example usage:
 image_path = "Lenna.png"  # Update with your image path
 x = load_image(image_path)
-coeffs = extract_scattering_coeffs(x, J=2, L=8)
+coeffs = extract_scattering_coeffs(x, J=3, L=8)
 print(coeffs.shape)
 
 

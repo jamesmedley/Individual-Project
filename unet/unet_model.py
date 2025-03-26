@@ -11,7 +11,7 @@ class UNet(nn.Module):
         self.n_classes = n_classes
         self.bilinear = bilinear
         self.input_shape = (128, 128)
-        self.J = 2
+        self.J = 3
         self.L = 8
 
         self.S = Scattering2D(J=self.J, shape=self.input_shape, L=self.L)
@@ -19,10 +19,10 @@ class UNet(nn.Module):
         n_order2 = n_channels * ((self.L ** 2 * self.J * (self.J - 1)) // 2)
         n_input_channels = n_order1 + n_order2
 
-        self.inc = (DoubleConv(n_input_channels, 256))  # replace with scattering
+        self.inc = (DoubleConv(n_input_channels, 512))
         # removed down1
         # removed down2
-        self.down3 = (Down(256, 512))
+        # removed down3
         factor = 2 if bilinear else 1
         self.down4 = (Down(512, 1024 // factor))
         self.up1 = (Up(1024, 512 // factor, bilinear))
@@ -31,8 +31,9 @@ class UNet(nn.Module):
         self.up4 = (Up(128, 64, bilinear, n_final_skip=67))  # skip: 64 + input channels
         self.outc = (OutConv(64, n_classes))
 
-        self.skip_upconv1 = (SkipDoubleUpConv(n_order1, 64))
-        self.skip_upconv2 = (SkipUpConv(n_order2, 128))
+        self.skip_upconv1 = (SkipTripleUpConv(n_order1, 64))
+        self.skip_upconv2 = (SkipDoubleUpConv(n_order1, 128))
+        self.skip_upconv3 = (SkipUpConv(n_order2, 256))
 
     def forward(self, x):
         scattering_coeffs = self.S.scattering(x.contiguous())  # Shape: (B, C, scattering_channels, H', W')
@@ -55,13 +56,13 @@ class UNet(nn.Module):
         skip_scat_coeffs_o1 = self.skip_upconv1(coeffs_order1)  # param: first n_order1 coefficients
         skip_order_1 = torch.cat([x, skip_scat_coeffs_o1], dim=1)
 
-        skip_order_2 = self.skip_upconv2(coeffs_order2)  # param: next n_order2 coefficients
+        skip_order_2 = self.skip_upconv2(coeffs_order1)
+        skip_order_3 = self.skip_upconv3(coeffs_order2)
 
         x1 = self.inc(all_coeffs)
-        x4 = self.down3(x1)
-        x5 = self.down4(x4)
-        x = self.up1(x5, x4)
-        x = self.up2(x, x1)
+        x5 = self.down4(x1)
+        x = self.up1(x5, x1)
+        x = self.up2(x, skip_order_3)
         x = self.up3(x, skip_order_2)
         x = self.up4(x, skip_order_1)
         logits = self.outc(x)
@@ -69,14 +70,13 @@ class UNet(nn.Module):
 
     def use_checkpointing(self):
         self.inc = torch.utils.checkpoint(self.inc)
-        self.down3 = torch.utils.checkpoint(self.down3)
         self.down4 = torch.utils.checkpoint(self.down4)
         self.up1 = torch.utils.checkpoint(self.up1)
         self.up2 = torch.utils.checkpoint(self.up2)
         self.up3 = torch.utils.checkpoint(self.up3)
         self.up4 = torch.utils.checkpoint(self.up4)
         self.outc = torch.utils.checkpoint(self.outc)
-        self.skip_upconv1 = torch.utils.checkpoint(self.skip_upconv)
-        self.skip_upconv2 = torch.utils.checkpoint(self.skip_upconv)
-
+        self.skip_upconv1 = torch.utils.checkpoint(self.skip_upconv1)
+        self.skip_upconv2 = torch.utils.checkpoint(self.skip_upconv2)
+        self.skip_upconv3 = torch.utils.checkpoint(self.skip_upconv3)
 

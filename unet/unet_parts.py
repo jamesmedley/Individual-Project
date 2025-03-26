@@ -72,6 +72,20 @@ class SkipUpConv(nn.Module):
         return self.up(x)
 
 
+class SkipDoubleUpConv(nn.Module):
+    """Upscaling skip connection by factor of 4"""
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+        self.up = nn.Sequential(
+            nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=2),
+            nn.ConvTranspose2d(out_channels, out_channels, kernel_size=2, stride=2)
+        )
+
+    def forward(self, x):
+        return self.up(x)
+
+
+
 class OutConv(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(OutConv, self).__init__()

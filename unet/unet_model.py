@@ -30,7 +30,7 @@ class UNet(nn.Module):
         self.up4 = (Up(128, 64, bilinear, n_final_skip=67))  # skip: 64 + input channels
         self.outc = (OutConv(64, n_classes))
 
-        self.skip_upconv = (SkipUpConv(n_input_channels+3, 64))
+        self.skip_upconv = (SkipUpConv(n_input_channels, 64))
 
     def forward(self, x):
         scattering_coeffs = self.S.scattering(x.contiguous())  # Shape: (B, C, scattering_channels, H', W')

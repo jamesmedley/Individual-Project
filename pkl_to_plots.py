@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from skopt import load
 from skopt.plots import plot_convergence, plot_objective, plot_evaluations
 
-result = load("hp_optim_results.pkl")
+result = load("hp_optim_results_100.pkl")
 
 # Best hyperparameters
 best_hyperparameters = {
@@ -33,7 +33,7 @@ plt.close()
 
 # Generate and save objective function plot
 plt.figure(figsize=(25, 25))
-plot_objective(result, dimensions=param_names, n_points=100, levels=30, size=5)
+plot_objective(result, dimensions=param_names, n_points=200, levels=30, size=5)
 plt.savefig('objective_plot.png', dpi=300)
 plt.close()
 

@@ -22,7 +22,7 @@ val_mask_dir = './data/val/masks/'
 train_img_dir = './data/train/imgs/'
 train_mask_dir = './data/train/masks/'
 
-val_set = BasicDataset(val_img_dir, val_mask_dir)
+val_set = BasicDataset(val_img_dir, val_mask_dir, 0.5)
 val_loader = DataLoader(val_set, batch_size=8, shuffle=False)
 
 image_transforms = [
@@ -73,5 +73,5 @@ def objective(params):
 
 if __name__ == '__main__':
     # Run the Bayesian Optimisation
-    result = gp_minimize(objective, space, n_calls=10, random_state=42)
+    result = gp_minimize(objective, space, n_calls=100, random_state=42)
     dump(result, "hp_optim_results.pkl", store_objective=False)

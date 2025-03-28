@@ -41,8 +41,13 @@ n_train = len(train_set)
 loader_args = dict(batch_size=8, num_workers=20, pin_memory=True)
 train_loader = DataLoader(train_set, shuffle=True, **loader_args)
 
+n = 0
+
 
 def objective(params):
+    global n
+    n += 1
+    print(f"Training Run {n}/100")
     learning_rate, weight_decay, gradient_clipping = params
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'Using device {device}')

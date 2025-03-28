@@ -54,6 +54,11 @@ for metric, values in metrics.items():
     std_dev = np.std(values)
     print(f"{metric}: Mean = {mean:.4f}, Std Dev = {std_dev:.4f}")
 
+final_credible_intervals = runs[-1][1]  # Last run's credible intervals
+
+for metric, interval in final_credible_intervals.items():
+    print(f"{metric}: {interval}")
+
 
 def plot_boxplots(metrics, filename="boxplot.png"):
     """Generates boxplots for each metric and saves the plot as an image."""

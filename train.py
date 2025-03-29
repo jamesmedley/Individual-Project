@@ -29,16 +29,16 @@ dir_checkpoint = Path('./checkpoints/')
 def train_model(
         model,
         device,
-        epochs: int = 5,
-        batch_size: int = 1,
-        learning_rate: float = 1e-5,
+        epochs: int = 50,
+        batch_size: int = 8,
+        learning_rate: float = 0.00016724023105570975,
         val_percent: float = 0.1,
         save_checkpoint: bool = True,
         img_scale: float = 0.5,
         amp: bool = False,
-        weight_decay: float = 1e-8,
+        weight_decay: float = 8.319949977323468e-06,
         momentum: float = 0.999,
-        gradient_clipping: float = 1.0,
+        gradient_clipping: float = 0.5,
 ):
     image_transforms = [
         T.RandomHorizontalFlip(p=0.5),

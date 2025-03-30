@@ -31,7 +31,7 @@ class WaveletDown(nn.Module):
     def __init__(self, in_channels, out_channels, wave='haar'):
         super().__init__()
         self.conv = DoubleConv(in_channels, out_channels)
-        self.dwt = DWTForward(J=1, mode='zero', wave=wave)  # Single-level DWT
+        self.dwt = DWTForward(J=1, mode='zero', wave=wave).cuda()  # Single-level DWT
 
     def forward(self, x):
         Yl, Yh = self.dwt(x)
@@ -43,7 +43,7 @@ class WaveletUp(nn.Module):
     def __init__(self, in_channels, out_channels, wave='haar'):
         super().__init__()
         self.conv = DoubleConv(in_channels, out_channels)
-        self.idwt = DWTInverse(mode='zero', wave=wave)
+        self.idwt = DWTInverse(mode='zero', wave=wave).cuda()
         self.halve_channels = nn.Conv2d(in_channels, in_channels // 2, kernel_size=1)
 
     def forward(self, x, skip_connection, Yh):

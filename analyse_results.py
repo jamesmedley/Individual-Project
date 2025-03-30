@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # File path
-file_path = "training_results.txt"
+file_path = "training_results_F3.txt"
 
 # Updated regex pattern to extract the two dictionaries
 dict_pattern = re.compile(r"Run \d+: (\{.*?\}), Credible Intervals: (\{.*?\})")
@@ -66,7 +66,7 @@ def plot_boxplots(metrics, filename="boxplot.png"):
     sns.boxplot(data=[metrics[key] for key in metrics.keys()])
     plt.xticks(ticks=range(len(metrics.keys())), labels=list(metrics.keys()), rotation=20)
     plt.ylabel("Metric Values")
-    plt.title("Boxplots of Metrics for UNet")
+    plt.title("Model 3: Boxplots of Metrics")
     plt.grid(axis="y", linestyle="--", alpha=0.7)
     # Save the figure
     plt.savefig(filename, bbox_inches="tight", dpi=300)
@@ -121,8 +121,8 @@ def plot_credible_intervals(runs, filename="credible_intervals.png"):
 
     plt.xlabel("Run Number")
     plt.ylabel("Metric Value")
-    plt.title("Bayesian Credible Intervals Over Training Runs with Mean Values")
-    plt.legend()
+    plt.title("Model 3: Bayesian Credible Intervals Over Training Runs with Mean Values")
+    plt.legend(loc='upper left', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
     plt.grid(True, linestyle="--", alpha=0.7)
     plt.savefig(filename, bbox_inches="tight", dpi=300)
     plt.close()

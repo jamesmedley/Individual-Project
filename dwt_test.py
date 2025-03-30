@@ -14,7 +14,9 @@ def display_dwt_enhanced(image_path):
     # Apply 2D DWT
     xfm = DWTForward(J=1, mode='zero', wave='haar')  # Single level Haar wavelet transform
     Yl, Yh = xfm(img_tensor)
-
+    print(img_tensor.shape)
+    print(Yl.shape)
+    print(Yh[0].shape)
     # Extract LL, LH, HL, HH
     LL = Yl.squeeze().numpy()
     LH, HL, HH = torch.unbind(Yh[0], dim=2)  # Split along the third dimension

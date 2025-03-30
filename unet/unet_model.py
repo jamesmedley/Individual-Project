@@ -19,10 +19,10 @@ class UNet(nn.Module):
         self.down4 = WaveletDown(512, 1024 // factor)
 
         # Decoder (Expanding Path)
-        self.up1 = Up(1024, 512 // factor)
-        self.up2 = Up(512, 256 // factor)
-        self.up3 = Up(256, 128 // factor)
-        self.up4 = Up(128, 64, n_final_skip=67)
+        self.up1 = WaveletUp(1024, 512 // factor)
+        self.up2 = WaveletUp(512, 256 // factor)
+        self.up3 = WaveletUp(256, 128 // factor)
+        self.up4 = WaveletUp(128, 64, n_final_skip=67)
 
         # Output layer
         self.outc = OutConv(64, n_classes)
@@ -34,6 +34,7 @@ class UNet(nn.Module):
         x3 = self.down2(x2)
         x4 = self.down3(x3)
         x5 = self.down4(x4)
+
         x = self.up1(x5, x4)
         x = self.up2(x, x3)
         x = self.up3(x, x2)

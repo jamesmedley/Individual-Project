@@ -45,7 +45,7 @@ class DoubleConv(nn.Module):
 
 class WaveletDown(nn.Module):
     """Downscaling using Discrete Wavelet Transform (DWT) instead of max-pooling"""
-    def __init__(self, in_channels, out_channels, wave='haar'):
+    def __init__(self, in_channels, out_channels):
         super().__init__()
         self.double_conv = DoubleConv(13*in_channels, out_channels)  # 13 times for yl + 12 coefficients
         self.dtcwt = DTCWTForward(J=1).cuda()  # Single-level DTCWT
@@ -72,10 +72,13 @@ class WaveletDown(nn.Module):
 
 class WaveletUp(nn.Module):
     """Upscaling using inverse Discrete Wavelet Transform (IDWT) with skip connection"""
-    def __init__(self, in_channels, out_channels, n_final_skip=0, wave='haar'):
+    def __init__(self, in_channels, out_channels, n_final_skip=0):
         super().__init__()
         # firstly a single conv to 6.5x number of features (this guarantees divisible by 13)
         self.single_conv = SingleConv(in_channels, 6.5*in_channels)
+
+        # then upsample 1/13th for yl
+        self.up = nn.ConvTranspose2d(in_channels // 2, in_channels // 2, kernel_size=2, stride=2)
 
         # followed by the idwt, which will 1/13 the number of features.
         self.idwt = DTCWTInverse().cuda()
@@ -89,15 +92,15 @@ class WaveletUp(nn.Module):
 
         batch, channels, height, width = x.shape
         num_base_channels = channels // 13
-
-        # Split low-pass (Yl) and high-pass (Yh) components
         Yl, Yh = torch.split(x, [num_base_channels, 12 * num_base_channels], dim=1)
 
-        Yl = rearrange(Yl, 'b c h w -> b (4 c) (2 h) (2 w)')
-        Yh = rearrange(Yh, 'b (12 c) h w -> b 2 6 c h w')
+        Yl = self.up(Yl)  # upsample yl features
+
+        # Yh shape: (N, C, O(rientations), H, W, I(real or imaginary))
+        Yh = rearrange(Yh, 'b (c o i) h w -> b c o h w i', i=2, o=6)
 
         # Perform inverse DTCWT
-        x = self.idwt((Yl, Yh))
+        x = self.idwt((Yl, [Yh]))
 
         return self.double_conv(torch.cat([skip_connection, x], dim=1))
 

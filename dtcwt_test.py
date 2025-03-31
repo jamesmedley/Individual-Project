@@ -46,16 +46,19 @@ def display_dtcwt_enhanced(image_path):
 
     print("RECONSTRUCTING")
     batch, channels, height, width = dtcwt_output.shape
-    num_base_channels = channels // 16
-    Yl, Yh = torch.split(dtcwt_output, [4*num_base_channels, 12*num_base_channels], dim=1)
+    num_base_channels = channels // 13
+    Yl, Yh = torch.split(dtcwt_output, [num_base_channels, 12*num_base_channels], dim=1)
     print(Yl.shape)
     print(Yh.shape)
-    Yl = rearrange(Yl, 'b c h w -> b (4 c) (2 h) (2 w)')
-    print(Yl.shape)
-    Yh = rearrange(Yh, 'b (12 c) h w -> b 2 6 c h w')
+    #Yl = rearrange(Yl, 'b c h w -> b (4 c) (2 h) (2 w)')
+    #print(Yl.shape)
+
+    # Yh shape: (N, C, O(rientations), H, W, I(real or imaginary))
+    # torch.Size([8, 3072, 32, 32]) -> torch.Size([8, 256, 6, 32, 32, 2])
+    Yh = rearrange(Yh, 'b (c o i) h w -> b c o h w i', i=2, o=6)
     print(Yh.shape)
     # Perform inverse DTCWT
-    x = ifm((Yl, Yh))
+    x = ifm((X, [Yh]))
     print(x.shape)
 
 

@@ -47,7 +47,7 @@ n = 0
 def objective(params):
     global n
     n += 1
-    print(f"Training Run {n}/100")
+    print(f"Search Run {n}/100")
     learning_rate, weight_decay, gradient_clipping = params
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'Using device {device}')

@@ -1,3 +1,4 @@
+
 """ Full assembly of the parts to form the complete network """
 
 from .unet_parts import *
@@ -22,23 +23,24 @@ class UNet(nn.Module):
         self.up1 = WaveletUp(1024, 512 // factor)
         self.up2 = WaveletUp(512, 256 // factor)
         self.up3 = WaveletUp(256, 128 // factor)
-        self.up4 = WaveletUp(128, 64)
+        self.up4 = WaveletUp(128, 64, n_final_skip=67)
 
         # Output layer
         self.outc = OutConv(64, n_classes)
 
     def forward(self, x):
+        input_tensor = x.detach().clone()
         x1 = self.inc(x)
-        x2, coeffs2 = self.down1(x1)
-        x3, coeffs3 = self.down2(x2)
-        x4, coeffs4 = self.down3(x3)
-        x5, coeffs5 = self.down4(x4)
+        x2 = self.down1(x1)
+        x3 = self.down2(x2)
+        x4 = self.down3(x3)
+        x5 = self.down4(x4)
 
-        x = self.up1(x5, x4, coeffs5)
-        x = self.up2(x, x3, coeffs4)
-        x = self.up3(x, x2, coeffs3)
-        x = self.up4(x, x1, coeffs2)
-
+        x = self.up1(x5, x4)
+        x = self.up2(x, x3)
+        x = self.up3(x, x2)
+        skip = torch.cat([input_tensor, x1], dim=1)
+        x = self.up4(x, skip)
         logits = self.outc(x)
         return logits
 

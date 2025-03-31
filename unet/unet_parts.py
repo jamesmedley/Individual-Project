@@ -75,7 +75,7 @@ class WaveletUp(nn.Module):
     def __init__(self, in_channels, out_channels, n_final_skip=0):
         super().__init__()
         # firstly a single conv to 6.5x number of features (this guarantees divisible by 13)
-        self.single_conv = SingleConv(in_channels, 6.5*in_channels)
+        self.single_conv = SingleConv(in_channels, int(6.5 * in_channels))
 
         # then upsample 1/13th for yl
         self.up = nn.ConvTranspose2d(in_channels // 2, in_channels // 2, kernel_size=2, stride=2)

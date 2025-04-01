@@ -57,17 +57,17 @@ class WaveletDown(nn.Module):
         # Yh shape: (N, C, O(rientations), H, W, I(real or imaginary))
 
         # Method 1 - 13 channels (Yl + 12 coefficients)
-        Yl_pooled = self.max_pool(Yl)
-        Yh_rearranged = rearrange(Yh, 'b c o h w i -> b (c i o) h w')
-        dtcwt_output_1 = torch.cat([Yl_pooled, Yh_rearranged], dim=1)
+        #Yl_pooled = self.max_pool(Yl)
+        #Yh_rearranged = rearrange(Yh, 'b c o h w i -> b (c i o) h w')
+        #dtcwt_output_1 = torch.cat([Yl_pooled, Yh_rearranged], dim=1)
 
         # Method 2 - 7 channels (Magnitude-based)
-        #Yl_pooled = self.max_pool(Yl)
-        #magnitude = torch.sqrt(Yh[..., 0] ** 2 + Yh[..., 1] ** 2)  # Compute magnitude per orientation
-        #magnitude_concat = rearrange(magnitude, 'b c o h w -> b (c o) h w')  # Concatenate over orientations
-        #dtcwt_output_2 = torch.cat([Yl_pooled, magnitude_concat], dim=1)
+        Yl_pooled = self.max_pool(Yl)
+        magnitude = torch.sqrt(Yh[..., 0] ** 2 + Yh[..., 1] ** 2)  # Compute magnitude per orientation
+        magnitude_concat = rearrange(magnitude, 'b c o h w -> b (c o) h w')  # Concatenate over orientations
+        dtcwt_output_2 = torch.cat([Yl_pooled, magnitude_concat], dim=1)
 
-        return self.double_conv(dtcwt_output_1)
+        return self.double_conv(dtcwt_output_2)
 
 
 class WaveletUp(nn.Module):

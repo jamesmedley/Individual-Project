@@ -13,9 +13,12 @@ from .modules import conv1x1, ConvBNAct, Activation
 
 
 class UNet(nn.Module):  # DUCK-Net implementation, ignore class name
-    def __init__(self, num_class=1, n_channel=3, base_channel=17, act_type='relu'):
+    def __init__(self, n_classes=1, n_channels=3, base_channel=17, act_type='relu'):
         super().__init__()
-        self.down_stage1 = DownsampleBlock(n_channel, base_channel*2, act_type, fuse_channels=base_channel)
+        self.n_classes = n_classes
+        self.n_channels = n_channels
+
+        self.down_stage1 = DownsampleBlock(n_channels, base_channel*2, act_type, fuse_channels=base_channel)
         self.down_stage2 = DownsampleBlock(base_channel*2, base_channel*4, act_type)
         self.down_stage3 = DownsampleBlock(base_channel*4, base_channel*8, act_type)
         self.down_stage4 = DownsampleBlock(base_channel*8, base_channel*16, act_type)
@@ -32,7 +35,7 @@ class UNet(nn.Module):  # DUCK-Net implementation, ignore class name
         self.up_stage3 = UpsampleBlock(base_channel*4, base_channel*2, act_type)
         self.up_stage2 = UpsampleBlock(base_channel*2, base_channel, act_type)
         self.up_stage1 = UpsampleBlock(base_channel, base_channel, act_type)
-        self.seg_head = conv1x1(base_channel, num_class)
+        self.seg_head = conv1x1(base_channel, n_classes)
 
     def forward(self, x):
         x1, x1_skip, x = self.down_stage1(x)
@@ -81,7 +84,7 @@ class UpsampleBlock(nn.Module):
         size = residual.size()[2:]
         x = F.interpolate(x, size, mode='nearest')
 
-        x += residual
+        x = x + residual
         x = self.duck(x)
 
         return x

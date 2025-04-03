@@ -1,152 +1,81 @@
 """
-Paper:      UNet++: A Nested U-Net Architecture for Medical Image Segmentation
-Url:        https://arxiv.org/abs/1807.10165
+Paper:      Road Extraction by Deep Residual U-Net
+Url:        https://arxiv.org/abs/1711.10684
 Create by:  zh320
-Date:       2025/02/09
+Date:       2025/01/05
 """
 
 import torch
 import torch.nn as nn
-from .modules import conv1x1, DeConvBNAct, ConvBNAct
+import torch.nn.functional as F
+from .modules import conv1x1, ConvBNAct
 
 
-class UNet(nn.Module):  # UNET++ implementation. ignore class name
-    def __init__(self, num_class=1, n_channel=3, base_channel=32, use_aux=False, act_type='relu'):
+class UNet(nn.Module):  # ResUNet implementation, ignore class name
+    def __init__(self, num_class, n_channel=3, base_channel=64, act_type='relu'):
         super().__init__()
-        # Backbone
-        self.stage00 = UNetPPBlock(n_channel, base_channel, has_up=False, act_type=act_type)
-        self.stage10 = UNetPPBlock(base_channel, base_channel*2, base_channel, act_type=act_type)
-        self.stage20 = UNetPPBlock(base_channel*2, base_channel*4, base_channel*2, act_type=act_type)
-        self.stage30 = UNetPPBlock(base_channel*4, base_channel*8, base_channel*4, act_type=act_type)
-        self.stage40 = UNetPPBlock(base_channel*8, base_channel*16, base_channel*8, has_down=False, act_type=act_type)
-
-        self.stage01 = ConvBlock(base_channel*(1*2), base_channel, act_type)
-        self.stage02 = ConvBlock(base_channel*(1*3), base_channel, act_type)
-        self.stage03 = ConvBlock(base_channel*(1*4), base_channel, act_type)
-        self.stage11 = UNetPPBlock(base_channel*(2*2), base_channel*2, base_channel, has_down=False, act_type=act_type)
-        self.stage12 = UNetPPBlock(base_channel*(2*3), base_channel*2, base_channel, has_down=False, act_type=act_type)
-        self.stage21 = UNetPPBlock(base_channel*(4*2), base_channel*4, base_channel*2, has_down=False, act_type=act_type)
-
-        self.stage31 = UNetPPBlock(base_channel*(8*2), base_channel*4, base_channel*4, has_down=False, act_type=act_type)
-        self.stage22 = UNetPPBlock(base_channel*(4*3), base_channel*2, base_channel*2, has_down=False, act_type=act_type)
-        self.stage13 = UNetPPBlock(base_channel*(2*4), base_channel, base_channel, has_down=False, act_type=act_type)
-        self.stage04 = ConvBlock(base_channel*(1*5), base_channel, act_type)
+        self.encoding1 = ResBlock(n_channel, base_channel, 1, act_type)
+        self.encoding2 = ResBlock(base_channel, base_channel*2, 2, act_type)
+        self.encoding3 = ResBlock(base_channel*2, base_channel*4, 2, act_type)
+        self.bridge = ResBlock(base_channel*4, base_channel*8, 2, act_type)
+        self.decoding3 = ResBlock(base_channel*(8+4), base_channel*4, 1, act_type)
+        self.decoding2 = ResBlock(base_channel*(4+2), base_channel*2, 1, act_type)
+        self.decoding1 = ResBlock(base_channel*(2+1), base_channel, 1, act_type)
         self.seg_head = conv1x1(base_channel, num_class)
 
-        self.use_aux = use_aux
-        if use_aux:
-            self.aux_heads = nn.ModuleList([conv1x1(base_channel, num_class) for _ in range(3)])
+    def forward(self, x):
+        x1 = self.encoding1(x)
+        x2 = self.encoding2(x1)
+        x3 = self.encoding3(x2)
 
-    def forward(self, x, is_training=False):
-        # Backbone path
-        x00, x = self.stage00(x)
-        x10_skip, x10_up, x = self.stage10(x)
-        x20_skip, x20_up, x = self.stage20(x)
-        x30_skip, x30_up, x = self.stage30(x)
-        _, x = self.stage40(x)
+        x = self.bridge(x3)
 
-        # Stage 3
-        x = torch.cat([x, x30_skip], dim=1)
-        _, x = self.stage31(x)
+        x = F.interpolate(x, x3.size()[2:], mode='bilinear', align_corners=True)
+        x = torch.cat([x, x3], dim=1)
+        x = self.decoding3(x)
 
-        # Stage 2
-        x21_in = torch.cat([x30_up, x20_skip], dim=1)
-        x21_skip, x21_up = self.stage21(x21_in)
+        x = F.interpolate(x, x2.size()[2:], mode='bilinear', align_corners=True)
+        x = torch.cat([x, x2], dim=1)
+        x = self.decoding2(x)
 
-        x = torch.cat([x, x20_skip, x21_skip], dim=1)
-        _, x = self.stage22(x)
+        x = F.interpolate(x, x1.size()[2:], mode='bilinear', align_corners=True)
+        x = torch.cat([x, x1], dim=1)
+        x = self.decoding1(x)
 
-        # Stage 1
-        x11_in = torch.cat([x20_up, x10_skip], dim=1)
-        x11_skip, x11_up = self.stage11(x11_in)
-
-        x12_in = torch.cat([x21_up, x10_skip, x11_skip], dim=1)
-        x12_skip, x12_up = self.stage12(x12_in)
-
-        x = torch.cat([x, x10_skip, x11_skip, x12_skip], dim=1)
-        _, x = self.stage13(x)
-
-        # Stage0
-        x01 = torch.cat([x10_up, x00], dim=1)
-        x01 = self.stage01(x01)
-
-        x02 = torch.cat([x11_up, x00, x01], dim=1)
-        x02 = self.stage02(x02)
-
-        x03 = torch.cat([x12_up, x00, x01, x02], dim=1)
-        x03 = self.stage03(x03)
-
-        x = torch.cat([x, x00, x01, x02, x03], dim=1)
-        x = self.stage04(x)
-
-        # Seg heads
         x = self.seg_head(x)
 
-        if self.use_aux and is_training:    # a.k.a. deep supervision
-            aux_ins = [x01, x02, x03]
-            assert len(aux_ins) == len(self.aux_heads)
-
-            auxs = []
-            for i, aux_head in enumerate(self.aux_heads):
-                aux = aux_head(aux_ins[i])
-                auxs.append(aux)
-
-            return x, auxs
-
-        else:
-            return x
+        return x
 
     def use_checkpointing(self):
-        self.stage00 = torch.utils.checkpoint(self.stage00)
-        self.stage10 = torch.utils.checkpoint(self.stage10)
-        self.stage20 = torch.utils.checkpoint(self.stage20)
-        self.stage30 = torch.utils.checkpoint(self.stage30)
-        self.stage40 = torch.utils.checkpoint(self.stage40)
-        self.stage01 = torch.utils.checkpoint(self.stage01)
-        self.stage02 = torch.utils.checkpoint(self.stage02)
-        self.stage03 = torch.utils.checkpoint(self.stage03)
-        self.stage11 = torch.utils.checkpoint(self.stage11)
-        self.stage12 = torch.utils.checkpoint(self.stage12)
-        self.stage21 = torch.utils.checkpoint(self.stage21)
-        self.stage31 = torch.utils.checkpoint(self.stage31)
-        self.stage22 = torch.utils.checkpoint(self.stage22)
-        self.stage13 = torch.utils.checkpoint(self.stage13)
-        self.stage04 = torch.utils.checkpoint(self.stage04)
+        self.encoding1 = torch.utils.checkpoint(self.encoding1)
+        self.encoding2 = torch.utils.checkpoint(self.encoding2)
+        self.encoding3 = torch.utils.checkpoint(self.encoding3)
+        self.bridge = torch.utils.checkpoint(self.bridge)
+        self.decoding3 = torch.utils.checkpoint(self.decoding3)
+        self.decoding2 = torch.utils.checkpoint(self.decoding2)
+        self.decoding1 = torch.utils.checkpoint(self.decoding1)
         self.seg_head = torch.utils.checkpoint(self.seg_head)
 
 
-class UNetPPBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, up_channels=None, has_up=True, has_down=True, act_type='relu'):
+class ResBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, stride, act_type):
         super().__init__()
-        self.has_up = has_up
-        self.has_down = has_down
-        self.conv = ConvBlock(in_channels, out_channels, act_type)
-        if has_up:
-            assert up_channels is not None
-            self.up = DeConvBNAct(out_channels, up_channels, act_type=act_type)
-        if has_down:
-            self.pool = nn.MaxPool2d(3, 2, 1)
+        self.conv = nn.Sequential(
+                        ConvBNAct(in_channels, out_channels, stride=stride, act_type=act_type),
+                        ConvBNAct(out_channels, out_channels, act_type=act_type)
+                    )
+
+        self.has_skip_conv = in_channels != out_channels or stride != 1
+        if self.has_skip_conv:
+            self.conv_skip = conv1x1(in_channels, out_channels, stride=stride)
 
     def forward(self, x):
-        feats = []
+        residual = x
+        if self.has_skip_conv:
+            residual = self.conv_skip(residual)
 
-        x = self.conv(x)        # skip path
-        feats.append(x)
+        x = self.conv(x)
+        x += residual
 
-        if self.has_up:         # upsample path
-            x_up = self.up(x)
-            feats.append(x_up)
-
-        if self.has_down:       # downsample path
-            x_down = self.pool(x)
-            feats.append(x_down)
-
-        return feats    # [skip, up, down]
-
-
-class ConvBlock(nn.Sequential):
-    def __init__(self, in_channels, out_channels, act_type):
-        super().__init__(
-            ConvBNAct(in_channels, out_channels, 3, act_type=act_type, inplace=True),
-            ConvBNAct(out_channels, out_channels, 3, act_type=act_type, inplace=True)
-        )
+        return x
+    

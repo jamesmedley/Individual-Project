@@ -11,10 +11,13 @@ from .modules import conv1x1, DeConvBNAct, ConvBNAct
 
 
 class UNet(nn.Module):  # UNET++ implementation. ignore class name
-    def __init__(self, num_class=1, n_channel=3, base_channel=32, use_aux=False, act_type='relu'):
+    def __init__(self, n_classes=1, n_channels=3, base_channel=32, use_aux=False, act_type='relu'):
         super().__init__()
+        self.n_classes = n_classes
+        self.n_channels = n_channels
+
         # Backbone
-        self.stage00 = UNetPPBlock(n_channel, base_channel, has_up=False, act_type=act_type)
+        self.stage00 = UNetPPBlock(n_channels, base_channel, has_up=False, act_type=act_type)
         self.stage10 = UNetPPBlock(base_channel, base_channel*2, base_channel, act_type=act_type)
         self.stage20 = UNetPPBlock(base_channel*2, base_channel*4, base_channel*2, act_type=act_type)
         self.stage30 = UNetPPBlock(base_channel*4, base_channel*8, base_channel*4, act_type=act_type)
@@ -31,11 +34,11 @@ class UNet(nn.Module):  # UNET++ implementation. ignore class name
         self.stage22 = UNetPPBlock(base_channel*(4*3), base_channel*2, base_channel*2, has_down=False, act_type=act_type)
         self.stage13 = UNetPPBlock(base_channel*(2*4), base_channel, base_channel, has_down=False, act_type=act_type)
         self.stage04 = ConvBlock(base_channel*(1*5), base_channel, act_type)
-        self.seg_head = conv1x1(base_channel, num_class)
+        self.seg_head = conv1x1(base_channel, n_classes)
 
         self.use_aux = use_aux
         if use_aux:
-            self.aux_heads = nn.ModuleList([conv1x1(base_channel, num_class) for _ in range(3)])
+            self.aux_heads = nn.ModuleList([conv1x1(base_channel, n_classes) for _ in range(3)])
 
     def forward(self, x, is_training=False):
         # Backbone path

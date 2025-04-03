@@ -12,9 +12,12 @@ from .modules import conv1x1, ConvBNAct, Activation, SEBlock, ASPP
 
 
 class UNet(nn.Module):  # ResUNet++ implementation, ignore class name
-    def __init__(self, num_class, n_channel=3, base_channel=32, act_type='relu'):
+    def __init__(self, n_classes=1, n_channels=3, base_channel=32, act_type='relu'):
         super().__init__()
-        self.encoding_block1 = EncodingBlock(n_channel, base_channel, act_type)
+        self.n_classes = n_classes
+        self.n_channels = n_channels
+
+        self.encoding_block1 = EncodingBlock(n_channels, base_channel, act_type)
         self.encoding_block2 = EncodingBlock(base_channel, base_channel*2, act_type)
         self.encoding_block3 = EncodingBlock(base_channel*2, base_channel*4, act_type)
         self.encoding_block4 = EncodingBlock(base_channel*4, base_channel*8, act_type, has_se=False)
@@ -24,7 +27,7 @@ class UNet(nn.Module):  # ResUNet++ implementation, ignore class name
         self.decoding_block1 = DecodingBlock(base_channel*2, base_channel, base_channel, act_type)
         self.seg_head = nn.Sequential(
                             ASPP(base_channel, base_channel, act_type=act_type),
-                            conv1x1(base_channel, num_class)
+                            conv1x1(base_channel, n_classes)
                         )
 
     def forward(self, x):
@@ -75,7 +78,7 @@ class EncodingBlock(nn.Module):
     def forward(self, x):
         skip = self.conv_skip(x)
         x = self.conv(x)
-        skip += x
+        skip = skip + x
 
         if self.has_se:
             x = self.se(skip)
@@ -103,7 +106,7 @@ class DecodingBlock(nn.Module):
         skip = self.conv_skip(x)
 
         x = self.conv(x)
-        x += skip
+        x = x + skip
 
         return x
 
@@ -121,7 +124,7 @@ class Attention(nn.Module):
 
         size = x.size()[2:]
         g = F.interpolate(g, size, mode='nearest')
-        g += x_conv
+        g = g + x_conv
         g = self.conv(g)
         x = x*g
 

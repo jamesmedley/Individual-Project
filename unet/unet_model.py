@@ -12,16 +12,19 @@ from .modules import conv1x1, ConvBNAct
 
 
 class UNet(nn.Module):  # ResUNet implementation, ignore class name
-    def __init__(self, num_class, n_channel=3, base_channel=64, act_type='relu'):
+    def __init__(self, n_classes=1, n_channels=3, base_channel=64, act_type='relu'):
         super().__init__()
-        self.encoding1 = ResBlock(n_channel, base_channel, 1, act_type)
+        self.n_classes = n_classes
+        self.n_channels = n_channels
+
+        self.encoding1 = ResBlock(n_channels, base_channel, 1, act_type)
         self.encoding2 = ResBlock(base_channel, base_channel*2, 2, act_type)
         self.encoding3 = ResBlock(base_channel*2, base_channel*4, 2, act_type)
         self.bridge = ResBlock(base_channel*4, base_channel*8, 2, act_type)
         self.decoding3 = ResBlock(base_channel*(8+4), base_channel*4, 1, act_type)
         self.decoding2 = ResBlock(base_channel*(4+2), base_channel*2, 1, act_type)
         self.decoding1 = ResBlock(base_channel*(2+1), base_channel, 1, act_type)
-        self.seg_head = conv1x1(base_channel, num_class)
+        self.seg_head = conv1x1(base_channel, n_classes)
 
     def forward(self, x):
         x1 = self.encoding1(x)
@@ -75,7 +78,7 @@ class ResBlock(nn.Module):
             residual = self.conv_skip(residual)
 
         x = self.conv(x)
-        x += residual
+        x = x + residual
 
         return x
     

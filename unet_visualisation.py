@@ -15,11 +15,14 @@ from unet import UNet
 def load_model(model_path):
     model = UNet(n_channels=3, n_classes=1, bilinear=False)
 
-    state_dict = torch.load(model_path, map_location=torch.device('cpu'))
-    if isinstance(state_dict, dict):  # If it's a state_dict, load it
-        model.load_state_dict(state_dict, strict=False)
-    else:  # If the entire model is saved, load it directly
-        model = state_dict
+    try:
+        state_dict = torch.load(model_path, map_location='cpu')
+        if isinstance(state_dict, dict):
+            model.load_state_dict(state_dict, strict=False)
+        else:
+            model = state_dict
+    except Exception as e:
+        print("Failed to load model:", e)
     model.eval()  # Set model to evaluation mode
     return model
 
@@ -245,7 +248,7 @@ def save_scattering_coefficients(input_tensor, J=1, L=16, input_shape=(128, 128)
 
 def main():
     #model_path = './final_models/3/checkpoint_epoch10.pth'  # Path to your trained model
-    model_path = 'final_models/2/checkpoint_epoch50.pth'  # Path to your trained model
+    model_path = 'final_models/checkpoint_F1_1.pth'  # Path to your trained model
     image_path = 'data/test/imgs/cju1dfeupuzlw0835gnxip369.jpg'  # Path to a sample image
 
     # Load model and register hooks
@@ -264,7 +267,7 @@ def main():
     # Visualise feature maps
     # plot_feature_maps(feature_maps)
     # Visualise learned filters
-    # plot_filters(model)
+    plot_filters(model)
 
 if __name__ == "__main__":
     main()

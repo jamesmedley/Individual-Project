@@ -47,7 +47,7 @@ class WaveletDown(nn.Module):
     """Downscaling using Discrete Wavelet Transform (DWT) instead of max-pooling"""
     def __init__(self, in_channels, out_channels):
         super().__init__()
-        self.double_conv = DoubleConv(13*in_channels, out_channels)  # 13 times for yl + 12 coefficients
+        self.double_conv = DoubleConv(7*in_channels, out_channels)  # 13 times for yl + 12 coefficients
         self.dtcwt = DTCWTForward(J=1).cuda()  # Single-level DTCWT
         self.max_pool = nn.MaxPool2d(2)
 

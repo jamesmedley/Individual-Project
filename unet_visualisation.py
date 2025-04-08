@@ -9,6 +9,7 @@ from PIL import Image
 from matplotlib import cm
 import numpy as np
 from unet import UNet
+import os
 
 
 # Load and prepare the model
@@ -71,40 +72,59 @@ def plot_feature_maps(feature_maps):
         plt.show()
 
 
-def plot_filters(model, layer_indices=None):
+def save_filters_as_png(model, output_path="feature_visualisation/filters_visualisation.png"):
     """
-    Plot filters of convolutional layers from the model.
+    Save learned filters from Conv2d and ConvTranspose2d layers as an image.
 
     Args:
-        model (nn.Module): The trained model.
-        layer_indices (list, optional): Specific layer indices to visualise.
-                                        If None, visualises all convolutional layers.
+        model (nn.Module): The model containing convolutional layers.
+        output_path (str): Path to save the output PNG file.
     """
-    conv_layers = [layer for layer in model.modules() if isinstance(layer, torch.nn.Conv2d)]
 
-    if layer_indices is not None:
-        conv_layers = [conv_layers[i] for i in layer_indices]
+    conv_layers = [layer for layer in model.modules()
+                   if isinstance(layer, (nn.Conv2d, nn.ConvTranspose2d))]
 
-    for idx, conv_layer in enumerate(conv_layers):
-        filters = conv_layer.weight.data.cpu().numpy()  # Shape: (out_channels, in_channels, H, W)
+    num_layers = len(conv_layers)
+    num_filters = 8  # Number of filters per layer to display
 
-        num_filters = filters.shape[0]  # Number of filters
-        grid_size = int(np.ceil(np.sqrt(num_filters)))  # Determine grid size for plotting
+    fig_height = num_layers * 2
+    fig_width = num_filters * 2
+    fig, axes = plt.subplots(num_layers, num_filters, figsize=(fig_width, fig_height))
 
-        # Create a grid of subplots
-        fig, axes = plt.subplots(grid_size, grid_size, figsize=(grid_size * 2, grid_size * 2))
+    if num_layers == 1:
+        axes = np.expand_dims(axes, axis=0)
 
-        for i, ax in enumerate(axes.flat):
-            if i < num_filters:
-                # Visualise the first input channel of each filter
-                filter_img = filters[i, 0, :, :]  # Shape: (H, W)
-                ax.imshow(filter_img, cmap='viridis')
-                ax.axis('off')
-            else:
-                ax.axis('off')  # Hide extra axes
+    for row_idx, layer in enumerate(conv_layers):
+        filters = layer.weight.data.cpu().numpy()  # (out_channels, in_channels, H, W)
+        out_channels, in_channels, H, W = filters.shape
 
-        plt.suptitle(f"Filters from Layer {idx + 1}")
-        plt.show()
+        for col_idx in range(num_filters):
+            ax = axes[row_idx, col_idx]
+            if col_idx < out_channels:
+                filt = filters[col_idx, 0]  # Use first input channel
+                filt = (filt - filt.min()) / (filt.max() - filt.min() + 1e-5)  # Normalise to [0,1]
+                ax.imshow(filt, cmap="gray")
+            ax.axis("off")
+
+    # Move labels slightly left of plots without disturbing vertical spacing
+    for row_idx, layer in enumerate(conv_layers):
+        filters = layer.weight.data.cpu().numpy()  # (out_channels, in_channels, H, W)
+        out_channels, in_channels, H, W = filters.shape
+        filter_size = f"({H}x{W})"  # Filter size is (H x W)
+        layer_type = layer.__class__.__name__
+        y = axes[row_idx, 0].get_position().y0 + axes[row_idx, 0].get_position().height / 2
+        fig.text(
+            0.03, y,
+            f"{layer_type}\n{filter_size}",
+            va='center', ha='left',
+            fontsize=18, fontweight='bold'
+        )
+
+    # Clean layout
+    plt.subplots_adjust(left=0.2, wspace=0.05, hspace=0.05)
+    plt.savefig(output_path, dpi=300, bbox_inches='tight', pad_inches=0.1)
+    plt.close(fig)
+    print(f"Filters saved to {output_path}")
 
 
 def save_feature_maps_as_png(feature_maps, output_path="feature_maps.png"):
@@ -245,7 +265,7 @@ def save_scattering_coefficients(input_tensor, J=1, L=16, input_shape=(128, 128)
 
 def main():
     #model_path = './final_models/3/checkpoint_epoch10.pth'  # Path to your trained model
-    model_path = 'final_models/2/checkpoint_epoch50.pth'  # Path to your trained model
+    model_path = 'final_models/checkpoint_F2.pth'  # Path to your trained model
     image_path = 'data/test/imgs/cju1dfeupuzlw0835gnxip369.jpg'  # Path to a sample image
 
     # Load model and register hooks
@@ -260,11 +280,12 @@ def main():
     save_channel_images(image, input_tensor)
     save_segmentation_mask(output_tensor)
     save_feature_maps_as_png(feature_maps, output_path="feature_visualisation/feature_maps_highres.png")
-    save_scattering_coefficients(input_tensor)
+    save_scattering_coefficients(input_tensor, J=1, L=16)
     # Visualise feature maps
     # plot_feature_maps(feature_maps)
     # Visualise learned filters
-    # plot_filters(model)
+    save_filters_as_png(model, output_path="feature_visualisation/filters_visualisation.png")
+
 
 if __name__ == "__main__":
     main()

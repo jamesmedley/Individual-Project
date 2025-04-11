@@ -19,13 +19,13 @@ class UNet(nn.Module):
         n_order2 = n_channels * ((self.L ** 2 * self.J * (self.J - 1)) // 2)
         n_input_channels = n_order1 + n_order2
 
-        self.inc = (DoubleConv(n_input_channels, 512))
+        self.inc = (DoubleConv(n_input_channels, 1024))
         # removed down1
         # removed down2
         # removed down3
         factor = 2 if bilinear else 1
-        self.down4 = (Down(512, 1024 // factor))
-        self.up1 = (Up(1024, 512 // factor, bilinear))
+        # removed down4
+        self.up1 = (Up(1024, 512 // factor, bilinear, n_final_skip=n_order2))  # skip order 2 coeffs
         self.up2 = (Up(512, 256 // factor, bilinear))
         self.up3 = (Up(256, 128 // factor, bilinear))
         self.up4 = (Up(128, 64, bilinear, n_final_skip=67))  # skip: 64 + input channels
@@ -60,8 +60,7 @@ class UNet(nn.Module):
         skip_order_3 = self.skip_upconv3(coeffs_order2)
 
         x1 = self.inc(all_coeffs)
-        x5 = self.down4(x1)
-        x = self.up1(x5, x1)
+        x = self.up1(x1, coeffs_order2)
         x = self.up2(x, skip_order_3)
         x = self.up3(x, skip_order_2)
         x = self.up4(x, skip_order_1)
@@ -70,7 +69,6 @@ class UNet(nn.Module):
 
     def use_checkpointing(self):
         self.inc = torch.utils.checkpoint(self.inc)
-        self.down4 = torch.utils.checkpoint(self.down4)
         self.up1 = torch.utils.checkpoint(self.up1)
         self.up2 = torch.utils.checkpoint(self.up2)
         self.up3 = torch.utils.checkpoint(self.up3)

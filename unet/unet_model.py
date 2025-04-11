@@ -39,7 +39,8 @@ class UNet(nn.Module):
         B, C, scat_channels, H, W = scattering_coeffs.shape
         all_coeffs = scattering_coeffs.view(B, -1, H, W)  # Shape: (B, C * scattering_channels, H', W')
 
-        skip_order_1 = torch.cat([x, all_coeffs], dim=1)
+        skip_order_1 = self.skip_upconv1(all_coeffs)
+        skip_order_1 = torch.cat([x, skip_order_1], dim=1)
         skip_order_2 = self.skip_upconv2(all_coeffs)
 
         x1 = self.inc(all_coeffs)

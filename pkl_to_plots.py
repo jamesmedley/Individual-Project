@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from skopt import load
 from skopt.plots import plot_convergence, plot_objective, plot_evaluations
 
-result = load("hp_optim_results_F16.pkl")
+result = load("hp_optim_results_F10.4.pkl")
 
 # Best hyperparameters
 best_hyperparameters = {

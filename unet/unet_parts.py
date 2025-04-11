@@ -48,7 +48,7 @@ class WaveletDown(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
         self.double_conv = DoubleConv(7*in_channels, out_channels)  # 13 times for yl + 12 coefficients
-        self.dtcwt = DTCWTForward(J=1).cuda()  # Single-level DTCWT
+        self.dtcwt = DTCWTForward(J=1)#.cuda()  # Single-level DTCWT
         self.max_pool = nn.MaxPool2d(2)
 
     def forward(self, x):
@@ -113,7 +113,7 @@ class WaveletUpDWT(nn.Module):
         self.single_conv = SingleConv(in_channels, 2*in_channels)
 
         # followed by the idwt, which will quarter the number of features.
-        self.idwt = DWTInverse(mode='zero', wave=wave).cuda()
+        self.idwt = DWTInverse(mode='zero', wave=wave)#.cuda()
 
         # finally, we have ordinary double convolution to expected number of out channels
         expected_in_channels = (in_channels // 2 + n_final_skip) if n_final_skip > 0 else in_channels  # in case of extra input skip

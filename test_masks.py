@@ -86,7 +86,7 @@ def save_tensor_as_image(tensor, filename):
 
 
 def main():
-    model_path = 'final_models/checkpoint_F10.2.pth'  # Path to your trained model
+    model_path = 'final_models/checkpoint_F10.4.pth'  # Path to your trained model
     image_path1 = "C:/Users/james/OneDrive/Documents/Computer Science/Y3/Individual Project - CM30082/Demo Test Polpys/Imgs/img1.png"
     image_path2 = "C:/Users/james/OneDrive/Documents/Computer Science/Y3/Individual Project - CM30082/Demo Test Polpys/Imgs/img2.png"
     image_path3 = "C:/Users/james/OneDrive/Documents/Computer Science/Y3/Individual Project - CM30082/Demo Test Polpys/Imgs/img3.png"

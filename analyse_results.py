@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # File path
-file_path = "training_results_F10.4.txt"
+file_path = "training_results_J2(skip all).txt"
 
 # Updated regex pattern to extract the two dictionaries
 dict_pattern = re.compile(r"Run \d+: (\{.*?\}), Credible Intervals: (\{.*?\})")

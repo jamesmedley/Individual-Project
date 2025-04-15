@@ -46,9 +46,9 @@ img_out = Image.fromarray(normalise(conv_result).astype(np.uint8))
 img_orig = Image.fromarray(img_array.astype(np.uint8))
 
 # Compute magnitude spectra for frequency domain visualisation
-F_img_mag = np.log(np.abs(F_img) + 1)
-F_kernel_mag = np.log(np.abs(F_kernel) + 1)
-F_conv_mag = np.log(np.abs(F_conv) + 1)
+F_img_mag = np.log(np.abs(np.fft.fftshift(F_img)) + 1)
+F_kernel_mag = np.log(np.abs(np.fft.fftshift(F_kernel)) + 1)
+F_conv_mag = np.log(np.abs(np.fft.fftshift(F_conv)) + 1)
 
 # Convert to 8-bit images for saving
 F_img_img = Image.fromarray(normalise(F_img_mag).astype(np.uint8))

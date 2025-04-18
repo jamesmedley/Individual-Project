@@ -1,59 +1,69 @@
-import cv2
-import torch
 import numpy as np
 import matplotlib.pyplot as plt
-from pytorch_wavelets import DWTForward
+from scipy.fftpack import fft2, fftshift
+import torch
+import torch.nn.functional as F
 
 
-def display_dwt_enhanced(image_path):
-    # Load and preprocess the image
-    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-    img = cv2.resize(img, (128, 128), interpolation=cv2.INTER_LINEAR)
-    img_tensor = torch.tensor(img, dtype=torch.float32).unsqueeze(0).unsqueeze(0)  # Convert to NCHW format
+def haar_filter_bank(scale=1):
+    """
+    Generates Haar wavelet filters (LL, LH, HL, HH) for a given scale.
+    Returns: dictionary of 2D filters
+    """
+    # Base low-pass and high-pass
+    lp = np.array([1, 1]) / np.sqrt(2)
+    hp = np.array([1, -1]) / np.sqrt(2)
 
-    # Apply 2D DWT
-    xfm = DWTForward(J=1, mode='zero', wave='haar')  # Single level Haar wavelet transform
-    Yl, Yh = xfm(img_tensor)
+    # Upsample by inserting zeros
+    def upsample(filt, scale):
+        up = np.zeros((2 ** scale - 1) * (len(filt) - 1) + len(filt))
+        up[::2 ** scale] = filt
+        return up
 
-    # Extract LL, LH, HL, HH
-    LL = Yl.squeeze().numpy()
-    LH, HL, HH = torch.unbind(Yh[0], dim=2)  # Split along the third dimension
-    LH, HL, HH = LH.squeeze().numpy(), HL.squeeze().numpy(), HH.squeeze().numpy()
+    # 1D filters
+    lp_s = upsample(lp, scale)
+    hp_s = upsample(hp, scale)
 
-    print("input:", img.shape)
-    print("LL:", LL.shape)
-    print("LH:", LH.shape)
-    print("HL:", HL.shape)
-    print("HH:", HH.shape)
+    # 2D separable filters
+    LL = np.outer(lp_s, lp_s)
+    LH = np.outer(lp_s, hp_s)
+    HL = np.outer(hp_s, lp_s)
+    HH = np.outer(hp_s, hp_s)
 
-    # Enhance visibility of edge coefficients
-    def normalize_and_scale(coeff):
-        coeff = np.abs(coeff)  # Take absolute value to avoid negative pixels
-        return (coeff - coeff.min()) / (coeff.max() - coeff.min()) * 255  # Scale to [0,255]
+    return {'LL': LL, 'LH': LH, 'HL': HL, 'HH': HH}
 
-    LH, HL, HH = normalize_and_scale(LH), normalize_and_scale(HL), normalize_and_scale(HH)
 
-    # Display all images
-    fig, axes = plt.subplots(1, 5, figsize=(15, 5))
-    axes[0].imshow(img, cmap='viridis')
-    axes[0].set_title("Original Image")
-    axes[1].imshow(LL, cmap='viridis')
-    axes[1].set_title("LL (Approximation)")
-    axes[2].imshow(LH, cmap='viridis')
-    axes[2].set_title("LH (Horizontal)")
-    axes[3].imshow(HL, cmap='viridis')
-    axes[3].set_title("HL (Vertical)")
-    axes[4].imshow(HH, cmap='viridis')
-    axes[4].set_title("HH (Diagonal)")
+def plot_haar_filter_bank(scales=[1, 2, 3], size=128):
+    fig_spatial, axs_spatial = plt.subplots(len(scales), 4, figsize=(12, 8))
+    fig_freq, axs_freq = plt.subplots(len(scales), 4, figsize=(12, 8))
+    subbands = ['LL', 'LH', 'HL', 'HH']
 
-    for ax in axes:
-        ax.axis("off")
+    for i, scale in enumerate(scales):
+        filters = haar_filter_bank(scale)
+        for j, sb in enumerate(subbands):
+            filt = filters[sb]
 
+            # Pad to image size for frequency analysis
+            padded = np.zeros((size, size))
+            h, w = filt.shape
+            padded[:h, :w] = filt
+
+            # Spatial
+            axs_spatial[i, j].imshow(padded, cmap='gray')
+            axs_spatial[i, j].set_title(f'{sb}, scale {scale}')
+            axs_spatial[i, j].axis('off')
+
+            # Frequency
+            fft_img = fftshift(np.abs(fft2(padded)))
+            axs_freq[i, j].imshow(np.log(fft_img + 1), cmap='inferno')
+            axs_freq[i, j].set_title(f'{sb}, scale {scale}')
+            axs_freq[i, j].axis('off')
+
+    fig_spatial.suptitle("Haar Filter Bank (Spatial Domain)", fontsize=16)
+    fig_freq.suptitle("Haar Filter Bank (Fourier Domain)", fontsize=16)
     plt.tight_layout()
     plt.show()
 
 
-# Example usage
-image_path = 'data/test/imgs/cju1dfeupuzlw0835gnxip369.jpg'  # Path to a sample image
-image_path = 'Lenna_(test_image).png'
-display_dwt_enhanced(image_path)
+# Run it
+plot_haar_filter_bank()

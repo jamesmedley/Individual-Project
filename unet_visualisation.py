@@ -265,7 +265,7 @@ def save_scattering_coefficients(input_tensor, J=1, L=16, input_shape=(128, 128)
 
 def main():
     #model_path = './final_models/3/checkpoint_epoch10.pth'  # Path to your trained model
-    model_path = 'final_models/checkpoint_F4.pth'  # Path to your trained model
+    model_path = 'final_models/checkpoint_J4.pth'  # Path to your trained model
     image_path = 'data/test/imgs/cju1dfeupuzlw0835gnxip369.jpg'  # Path to a sample image
 
     # Load model and register hooks
@@ -280,7 +280,7 @@ def main():
     save_channel_images(image, input_tensor)
     save_segmentation_mask(output_tensor)
     save_feature_maps_as_png(feature_maps, output_path="feature_visualisation/feature_maps_highres.png")
-    save_scattering_coefficients(input_tensor, J=3, L=8)
+    save_scattering_coefficients(input_tensor, J=4, L=8)
     # Visualise feature maps
     # plot_feature_maps(feature_maps)
     # Visualise learned filters

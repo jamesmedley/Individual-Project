@@ -14,7 +14,7 @@ class UNet(nn.Module):
         self.J = 4
         self.L = 8
 
-        self.S = Scattering2D(J=self.J, shape=self.input_shape, L=self.L).cuda()
+        self.S = Scattering2D(J=self.J, shape=self.input_shape, L=self.L)
         n_order1 = n_channels * (1 + self.J * self.L)
         n_order2 = n_channels * ((self.L ** 2 * self.J * (self.J - 1)) // 2)
         n_input_channels = n_order1 + n_order2

@@ -1,69 +1,36 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from scipy.fftpack import fft2, fftshift
 import torch
-import torch.nn.functional as F
+from pytorch_wavelets import DWTForward, DWTInverse
+import matplotlib.pyplot as plt
 
+# Initialize forward and inverse transform
+xfm = DWTForward(J=3, wave='db1', mode='zero')  # Use Daubechies 1 wavelet (Haar)
+ifm = DWTInverse(wave='db1', mode='zero')
 
-def haar_filter_bank(scale=1):
-    """
-    Generates Haar wavelet filters (LL, LH, HL, HH) for a given scale.
-    Returns: dictionary of 2D filters
-    """
-    # Base low-pass and high-pass
-    lp = np.array([1, 1]) / np.sqrt(2)
-    hp = np.array([1, -1]) / np.sqrt(2)
+# Input tensor (64x64 image of zeros)
+x = torch.zeros(1, 1, 64, 64)
 
-    # Upsample by inserting zeros
-    def upsample(filt, scale):
-        up = np.zeros((2 ** scale - 1) * (len(filt) - 1) + len(filt))
-        up[::2 ** scale] = filt
-        return up
+# Create a list to store the outputs for each decomposition level
+out = np.zeros((4, 64, 64))
 
-    # 1D filters
-    lp_s = upsample(lp, scale)
-    hp_s = upsample(hp, scale)
+# Perform the forward transform
+yl, yh = xfm(x)  # yl is the LL band, yh is a list of high-pass bands
 
-    # 2D separable filters
-    LL = np.outer(lp_s, lp_s)
-    LH = np.outer(lp_s, hp_s)
-    HL = np.outer(hp_s, lp_s)
-    HH = np.outer(hp_s, hp_s)
+# Modify and inverse transform for each level of decomposition
+for level in range(3):  # DWT has 3 levels of decomposition (scales)
+    for ri in range(3):  # LH (horizontal), HL (vertical), HH (diagonal) for each scale
+        yh[level][0, 0, ri, 4, 4] = 1  # Set impulse at (4, 4) in the coefficient
+        out[level] = ifm((yl, yh))  # Perform inverse transform with modified yh
+        yh[level][0, 0, ri, 4, 4] = 0  # Reset the impulse to 0
 
-    return {'LL': LL, 'LH': LH, 'HL': HL, 'HH': HH}
+# Plot the outputs (visualising the inverse transform results)
+fig, axes = plt.subplots(2, 2, figsize=(8, 6))
+axes = axes.flatten()
 
+for i in range(4):
+    axes[i].imshow(out[i], cmap='gray')
+    axes[i].set_title(f'Output {i+1}')
+    axes[i].axis('off')
 
-def plot_haar_filter_bank(scales=[1, 2, 3], size=128):
-    fig_spatial, axs_spatial = plt.subplots(len(scales), 4, figsize=(12, 8))
-    fig_freq, axs_freq = plt.subplots(len(scales), 4, figsize=(12, 8))
-    subbands = ['LL', 'LH', 'HL', 'HH']
-
-    for i, scale in enumerate(scales):
-        filters = haar_filter_bank(scale)
-        for j, sb in enumerate(subbands):
-            filt = filters[sb]
-
-            # Pad to image size for frequency analysis
-            padded = np.zeros((size, size))
-            h, w = filt.shape
-            padded[:h, :w] = filt
-
-            # Spatial
-            axs_spatial[i, j].imshow(padded, cmap='gray')
-            axs_spatial[i, j].set_title(f'{sb}, scale {scale}')
-            axs_spatial[i, j].axis('off')
-
-            # Frequency
-            fft_img = fftshift(np.abs(fft2(padded)))
-            axs_freq[i, j].imshow(np.log(fft_img + 1), cmap='inferno')
-            axs_freq[i, j].set_title(f'{sb}, scale {scale}')
-            axs_freq[i, j].axis('off')
-
-    fig_spatial.suptitle("Haar Filter Bank (Spatial Domain)", fontsize=16)
-    fig_freq.suptitle("Haar Filter Bank (Fourier Domain)", fontsize=16)
-    plt.tight_layout()
-    plt.show()
-
-
-# Run it
-plot_haar_filter_bank()
+plt.tight_layout()
+plt.show()

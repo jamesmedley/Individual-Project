@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # File path
-file_path = "DRIVE_dtcwt_training_results.txt"
+file_path = "dtcwt(avg_pool)_training_results.txt"
 
 # Updated regex pattern to extract the two dictionaries
 dict_pattern = re.compile(r"Run \d+: (\{.*?\}), Credible Intervals: (\{.*?\})")

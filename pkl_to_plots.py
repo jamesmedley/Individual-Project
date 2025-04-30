@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from skopt import load
 from skopt.plots import plot_convergence, plot_objective, plot_evaluations
 
-result = load("hp_optim_results_J3(skip_all).pkl")
+result = load("hp_optim_results_F1.2.pkl")
 
 # Best hyperparameters
 best_hyperparameters = {
@@ -26,45 +26,54 @@ with open('best_hyperparameters.txt', 'w') as f:
 param_names = ["Learning Rate", "Weight Decay", "Gradient Clipping"]
 
 # Create a figure and axes with 1 row and 3 columns for the combined plot
-fig, axs = plt.subplots(1, 3, figsize=(26, 8))
+#fig, axs = plt.subplots(1, 3, figsize=(26, 8))
 
 # Plot Convergence on the first axis
-plot_convergence(result, ax=axs[0])
-axs[0].set_title('Convergence')
+#plot_convergence(result, ax=axs[0])
+#axs[0].set_title('Convergence')
 
 # Plot Objective Function on the second axis
-plot_objective(result, dimensions=param_names, n_points=100, levels=30, size=5, ax=axs[1])
-axs[1].set_title('Objective Function')
+#plot_objective(result, dimensions=param_names, n_points=100, levels=30, size=5, ax=axs[1])
+#axs[1].set_title('Objective Function')
 
 # Plot Evaluations on the third axis
-plot_evaluations(result, dimensions=param_names, size=5, ax=axs[2])
-axs[2].set_title('Evaluations')
+#plot_evaluations(result, dimensions=param_names, size=5, ax=axs[2])
+#axs[2].set_title('Evaluations')
 
 # Adjust layout to remove gaps
-plt.tight_layout()
+#plt.tight_layout()
 
 # Save the combined plot
-plt.savefig('combined_plots.png', dpi=300)
+#plt.savefig('combined_plots.png', dpi=300)
 
 # Close the combined plot to free memory
-plt.close()
+#plt.close()
 
 # Save individual plots as before
 
-# Generate and save convergence plot
 plt.figure(figsize=(12, 8))
 plot_convergence(result)
+plt.xlabel(r"Number of calls, n", fontsize=16)
+plt.ylabel("Min f(x) after n calls", fontsize=16)
+plt.xticks(fontsize=14)
+plt.yticks(fontsize=14)
+plt.title("Convergence Plot", fontsize=20)
 plt.savefig('convergence_plot.png', dpi=300)
 plt.close()
 
-# Generate and save objective function plot
-plt.figure(figsize=(25, 25))
-plot_objective(result, dimensions=param_names, n_points=100, levels=30, size=5)
+plt.figure(figsize=(12, 8))
+plot_objective(
+    result,
+    dimensions=param_names,
+    size=5,
+    n_points=250,
+    levels=30
+)
 plt.savefig('objective_plot.png', dpi=300)
 plt.close()
 
 # Generate and save evaluations plot
-plt.figure(figsize=(25, 25))
-plot_evaluations(result, dimensions=param_names, size=5)
-plt.savefig('evaluations_plot.png', dpi=300)
-plt.close()
+#plt.figure(figsize=(25, 25))
+#plot_evaluations(result, dimensions=param_names, size=5)
+#plt.savefig('evaluations_plot.png', dpi=300)
+#plt.close()

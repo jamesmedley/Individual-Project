@@ -1,4 +1,4 @@
 Best Hyperparameters:
-Learning Rate: 0.000173811118644079
-Weight Decay: 1e-08
-Gradient Clipping: 0.5
+Learning Rate: 0.00018662051794014284
+Weight Decay: 1.1709872686058245e-06
+Gradient Clipping: 1.7557474970988531

@@ -25,31 +25,29 @@ class UNet(nn.Module):
         self.down3 = (Down(256, 512))
         factor = 2 if bilinear else 1
         self.down4 = (Down(512, 1024 // factor))
-        self.up1 = (Up(1024, 512 // factor, bilinear))
-        self.up2 = (Up(512, 256 // factor, bilinear))
-        self.up3 = (Up(256, 128 // factor, bilinear))
+        self.up1 = (Up(1024, 512 // factor, bilinear, n_final_skip=0))
+        self.up2 = (Up(512, 256 // factor, bilinear, n_final_skip=0))
+        self.up3 = (Up(256, 128 // factor, bilinear, n_final_skip=0))
         self.up4 = (Up(128, 64, bilinear, n_final_skip=67))  # skip: 64 + input channels
         self.outc = (OutConv(64, n_classes))
 
         self.skip_upconv1 = (SkipDoubleUpConv(n_input_channels, 64))  # all coeffs to skip to each layer
-        self.skip_upconv2 = (SkipUpConv(n_input_channels, 128))
 
     def forward(self, x):
         scattering_coeffs = self.S.scattering(x.contiguous())  # Shape: (B, C, scattering_channels, H', W')
         B, C, scat_channels, H, W = scattering_coeffs.shape
         all_coeffs = scattering_coeffs.view(B, -1, H, W)  # Shape: (B, C * scattering_channels, H', W')
 
-        skip_order_1 = self.skip_upconv1(all_coeffs)
-        skip_order_1 = torch.cat([x, skip_order_1], dim=1)
-        skip_order_2 = self.skip_upconv2(all_coeffs)
+        skip = self.skip_upconv1(all_coeffs)
+        skip = torch.cat([x, skip], dim=1)
 
         x1 = self.inc(all_coeffs)
         x4 = self.down3(x1)
         x5 = self.down4(x4)
-        x = self.up1(x5, x4)
-        x = self.up2(x, x1)
-        x = self.up3(x, skip_order_2)
-        x = self.up4(x, skip_order_1)
+        x = self.up1(x5, None)
+        x = self.up2(x, None)
+        x = self.up3(x, None)
+        x = self.up4(x, skip)
         logits = self.outc(x)
         return logits
 

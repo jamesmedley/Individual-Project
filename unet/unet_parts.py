@@ -46,47 +46,29 @@ class Up(nn.Module):
         super().__init__()
         self.bilinear = bilinear
         self.up = nn.ConvTranspose2d(in_channels, in_channels // 2, kernel_size=2, stride=2)
+        self.n_final_skip = n_final_skip
 
-        expected_in_channels = (in_channels // 2 + n_final_skip) if n_final_skip > 0 else in_channels
+        expected_in_channels = (in_channels // 2 + n_final_skip)
         self.conv = DoubleConv(expected_in_channels, out_channels)
 
     def forward(self, x1, x2):
         x1 = self.up(x1)
-        diffY = x2.size()[2] - x1.size()[2]
-        diffX = x2.size()[3] - x1.size()[3]
 
-        x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2, diffY // 2, diffY - diffY // 2])
+        if self.n_final_skip > 0:
+            diffY = x2.size()[2] - x1.size()[2]
+            diffX = x2.size()[3] - x1.size()[3]
 
-        x = torch.cat([x2, x1], dim=1)
+            x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2, diffY // 2, diffY - diffY // 2])
 
-        return self.conv(x)
+            x = torch.cat([x2, x1], dim=1)
 
-
-class SkipUpConv(nn.Module):
-    """Upscaling skip connection to size"""
-    def __init__(self, in_channels, out_channels):
-        super().__init__()
-        self.up = nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=2)
-
-    def forward(self, x):
-        return self.up(x)
-
-
-class SkipDoubleUpConv(nn.Module):
-    """Upscaling skip connection by factor of 4"""
-    def __init__(self, in_channels, out_channels):
-        super().__init__()
-        self.up = nn.Sequential(
-            nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=2),
-            nn.ConvTranspose2d(out_channels, out_channels, kernel_size=2, stride=2)
-        )
-
-    def forward(self, x):
-        return self.up(x)
+            return self.conv(x)
+        else:
+            return self.conv(x1)
 
 
 class SkipTripleUpConv(nn.Module):
-    """Upscaling skip connection by factor of 8"""
+    """Upscaling skip connection by factor of 4"""
     def __init__(self, in_channels, out_channels):
         super().__init__()
         self.up = nn.Sequential(

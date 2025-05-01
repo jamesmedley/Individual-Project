@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 import wandb
 from evaluate import evaluate
-from unet import UNet, ScatUNet, JNet
+from unet import UNet
 from utils.data_loading import BasicDataset
 from utils.dice_score import dice_loss
 
@@ -29,16 +29,16 @@ dir_checkpoint = Path('./checkpoints/')
 def train_model(
         model,
         device,
-        epochs: int = 5,
-        batch_size: int = 1,
-        learning_rate: float = 1e-5,
+        epochs: int = 50,
+        batch_size: int = 8,
+        learning_rate: float = 0.000186620517940142,
         val_percent: float = 0.1,
         save_checkpoint: bool = True,
         img_scale: float = 0.5,
         amp: bool = False,
-        weight_decay: float = 1e-8,
+        weight_decay: float = 1.17098726860582e-06,
         momentum: float = 0.999,
-        gradient_clipping: float = 1.0,
+        gradient_clipping: float = 1.75574749709885,
 ):
     image_transforms = [
         T.RandomHorizontalFlip(p=0.5),
@@ -55,7 +55,7 @@ def train_model(
     n_val = len(val_set)
 
     # 3. Create data loaders
-    loader_args = dict(batch_size=batch_size, num_workers=os.cpu_count(), pin_memory=True)
+    loader_args = dict(batch_size=batch_size, num_workers=20, pin_memory=True)
     train_loader = DataLoader(train_set, shuffle=True, **loader_args)
     val_loader = DataLoader(val_set, shuffle=False, drop_last=True, **loader_args)
 
@@ -82,7 +82,8 @@ def train_model(
     optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)  # goal: maximize Dice score
-    grad_scaler = torch.amp.GradScaler('cpu', enabled=amp)
+    use_amp = torch.cuda.is_available()
+    grad_scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
     criterion = nn.CrossEntropyLoss() if model.n_classes > 1 else nn.BCEWithLogitsLoss()
     global_step = 0
 
@@ -194,9 +195,7 @@ if __name__ == '__main__':
     # Change here to adapt to your data
     # n_channels=3 for RGB images
     # n_classes is the number of probabilities you want to get per pixel
-    #model = UNet(n_channels=3, n_classes=args.classes, bilinear=args.bilinear)
-    model = ScatUNet(n_channels=3, n_classes=1, bilinear=args.bilinear, J=1, L=16, input_shape=(128, 128))
-    #model = JNet(n_channels=3, n_classes=1, L=16, J=1, input_shape=(128, 128))
+    model = UNet(n_channels=3, n_classes=args.classes, bilinear=args.bilinear)
     model = model.to(memory_format=torch.channels_last)
 
     logging.info(f'Network:\n'

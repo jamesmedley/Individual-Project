@@ -10,7 +10,7 @@ class UNet(nn.Module):
         self.n_channels = n_channels
         self.n_classes = n_classes
         self.bilinear = bilinear
-        self.input_shape = (128, 128)
+        self.input_shape = (576, 560)
         self.J = 4
         self.L = 8
 

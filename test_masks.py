@@ -40,7 +40,7 @@ def register_hooks(model):
 # Preprocess the input image
 def preprocess_image(image_path):
     transform = transforms.Compose([
-        transforms.Resize((128, 128)),  # Resize to the desired input size
+        transforms.Resize((576, 560)),  # Resize to the desired input size
         transforms.ToTensor()
     ])
     image = Image.open(image_path).convert('RGB')  # Ensure image is RGB
@@ -86,11 +86,10 @@ def save_tensor_as_image(tensor, filename):
 
 
 def main():
-    model_path = 'final_models/checkpoint_J4.pth'  # Path to your trained model
-    image_path1 = "C:/Users/james/OneDrive/Documents/Computer Science/Y3/Individual Project - CM30082/Demo Test Polpys/Imgs/img1.png"
-    image_path2 = "C:/Users/james/OneDrive/Documents/Computer Science/Y3/Individual Project - CM30082/Demo Test Polpys/Imgs/img2.png"
-    image_path3 = "C:/Users/james/OneDrive/Documents/Computer Science/Y3/Individual Project - CM30082/Demo Test Polpys/Imgs/img3.png"
-    image_path4 = "C:/Users/james/OneDrive/Documents/Computer Science/Y3/Individual Project - CM30082/Demo Test Polpys/Imgs/img4.png"
+    model_path = 'final_models/DRIVE-Scat-UNet-J4.pth'  # Path to your trained model
+    image_path1 = "C:/Users/james/OneDrive/Documents/Computer Science/Y3/Individual Project - CM30082/AbdullahSarhan ICPRVessels main Vessels-Datasets-DRIVE/Test/imgs/01.jpg"
+    image_path2 = "C:/Users/james/OneDrive/Documents/Computer Science/Y3/Individual Project - CM30082/AbdullahSarhan ICPRVessels main Vessels-Datasets-DRIVE/Test/imgs/02.jpg"
+    image_path3 = "C:/Users/james/OneDrive/Documents/Computer Science/Y3/Individual Project - CM30082/AbdullahSarhan ICPRVessels main Vessels-Datasets-DRIVE/Test/imgs/03.jpg"
 
     # Load model and register hooks
     model = load_model(model_path)
@@ -100,18 +99,15 @@ def main():
     image1, input_tensor1 = preprocess_image(image_path1)
     image2, input_tensor2 = preprocess_image(image_path2)
     image3, input_tensor3 = preprocess_image(image_path3)
-    image4, input_tensor4 = preprocess_image(image_path4)
 
     with torch.no_grad():
         output_tensor1 = model(input_tensor1)
         output_tensor2 = model(input_tensor2)
         output_tensor3 = model(input_tensor3)
-        output_tensor4 = model(input_tensor4)
 
     save_segmentation_mask(output_tensor1, filename="mask1.png")
     save_segmentation_mask(output_tensor2, filename="mask2.png")
     save_segmentation_mask(output_tensor3, filename="mask3.png")
-    save_segmentation_mask(output_tensor4, filename="mask4.png")
 
 
 if __name__ == "__main__":

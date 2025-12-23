@@ -1,9 +1,0 @@
-*.pyc
-data/
-__pycache__/
-checkpoints/
-*.jpg
-venv/
-.idea/
-wandb/
-final_models/

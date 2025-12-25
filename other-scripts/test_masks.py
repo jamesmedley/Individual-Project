@@ -3,7 +3,7 @@ import torch.nn as nn
 from torchvision import transforms
 from PIL import Image
 import numpy as np
-from unet import UNet
+from experiments.models.UNet import UNet
 
 
 # Load and prepare the model

@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from matplotlib import cm
 import numpy as np
-from unet import UNet
+from experiments.models.UNet import UNet
 import os
 
 

@@ -1,4 +1,4 @@
-# Third-year Research Project
+# Third-Year Research Project
 This repository contains the software associated with my third-year undergraduate individual research project and
 dissertation, titled **_Exploring the Integration of Wavelet Transforms with U-Net for Polyp Segmentation_**, which was
 awarded 84%.
@@ -25,13 +25,11 @@ architectures as a principled and effective alternative to standard CNN design c
 
 The full dissertation is provided [here](docs/dissertation.pdf) for reference.
 
-___
 
 ## License
 - The dissertation PDF remains copyright James Medley 2025. All rights reserved; no part may be reproduced, quoted, or distributed without prior written consent of the author.  
 - Code is licensed under [MIT](LICENSE).
 
-___
 
 ## Setup
 
@@ -68,22 +66,16 @@ scikit-optimize
 einops
 ```
 
-___
-
 ## Experiments
-
-___
-
-## Models
-
-___
+PyTorch implementations of all models evaluated in this project are located in the
+[experiments/models](experiments/models) directory, with each model organised into its own subdirectory. Training,
+testing and evalutation scripts are provided within the [experiments](experiments) directory, while code for Bayesian
+hyperparameter optimisation is contained in the [hyperparameter-search](hyperparameter-search) directory.
 
 ## Results
-The directory [results-and-checkpoints](results-and-checkpoints) contains raw results, charts, learned filter
-visualisations, layer activation maps, and sample segmentation masks for each evaluated model. There is also a
-_checkpoint.pth_ file provided for each model.
-
-___
+The [results-and-checkpoints](results-and-checkpoints) directory contains all experimental outputs, including raw 
+results, performance plots, learned filter visualisations, intermediate activation maps, and example segmentation masks
+for each model. A trained model checkpoint (_checkpoint.pth_) is also provided for every evaluated architecture.
 
 ## References
 - Pytorch baseline U-Net: https://github.com/milesial/Pytorch-UNet  

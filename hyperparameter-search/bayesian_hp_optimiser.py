@@ -1,14 +1,14 @@
 import torch
 from torch.utils.data import DataLoader
 import torchvision.transforms as T
-from utils.data_augment import JointTransform
+from experiments.utils.data_augment import JointTransform
 from skopt import gp_minimize
 from skopt import dump
 from skopt.space import Real
-from unet import UNet
-from utils.data_loading import BasicDataset
-from evaluate import evaluate
-from train import train_model
+from experiments.models.UNet import UNet
+from experiments.utils import BasicDataset
+from experiments.evaluate import evaluate
+from experiments.train import train_model
 
 # Define search space
 space = [
